@@ -18,6 +18,7 @@
  * 저장은 서버(`/api/coaches/me/lesson-vocabulary`)가 원본이고, 오프라인·
  * 서버 실패에 대비해 마지막으로 받은 사전을 localStorage 에 둔다.
  */
+import { isTestMode } from '../utils/testMode';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('lessonVocabulary');
@@ -375,6 +376,8 @@ const writeCache = (vocab: LessonVocabulary): void => {
 
 /** 서버의 사전을 읽는다. 실패하면 마지막으로 받은 사전을 쓴다. */
 export const loadLessonVocabulary = async (): Promise<LessonVocabulary> => {
+  // 테스트 모드는 서버가 없다 — 이 기기에 둔 사전만 쓴다.
+  if (isTestMode()) return readCache();
   try {
     // API 계층은 여기서만 필요하다 — 정적 import 하면 필기 파이프라인이 이
     // 모듈의 순수 함수(프롬프트 블록)를 쓰는 것만으로 API 계층까지 끌려온다.
@@ -393,6 +396,10 @@ export const saveLessonVocabulary = async (
   vocab: LessonVocabulary
 ): Promise<LessonVocabulary> => {
   const normalized = normalizeLessonVocabulary(vocab);
+  if (isTestMode()) {
+    writeCache(normalized);
+    return normalized;
+  }
   const { apiService } = await import('./apiService');
   const saved = normalizeLessonVocabulary(await apiService.saveLessonVocabulary(normalized));
   writeCache(saved);

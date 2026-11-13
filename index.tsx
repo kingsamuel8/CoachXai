@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { PublicLessonNote } from './components/simple/PublicLessonNote';
+import { TestModeApp } from './components/simple/TestModeApp';
 import { readLessonNoteToken } from './utils/publicAppUrl';
+import { decodeNoteLink } from './utils/noteLink';
+import { syncTestModeFromUrl } from './utils/testMode';
 import {
   initStatusBar,
   hideSplashScreen,
@@ -18,11 +21,24 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-// 코치가 보낸 레슨 노트 링크(?note=<토큰>)는 로그인 없이 노트만 띄운다.
+// 코치가 보낸 레슨 노트 링크는 로그인 없이 노트만 띄운다:
+//  - ?note=<토큰> — 서버에 저장된 노트(서버 모드)
+//  - #note=<내용> — 링크에 담긴 노트(테스트 모드, 서버 없이 열린다)
+// 테스트 모드(?test=1)는 서버 없이 녹음 → 정리 → 전달만 도는 화면이다.
 const noteToken = readLessonNoteToken(window.location.search);
+const inlineNote = decodeNoteLink(window.location.hash);
+const testMode = syncTestModeFromUrl(window.location.search);
 root.render(
   <React.StrictMode>
-    {noteToken ? <PublicLessonNote token={noteToken} /> : <App />}
+    {inlineNote ? (
+      <PublicLessonNote data={inlineNote} />
+    ) : noteToken ? (
+      <PublicLessonNote token={noteToken} />
+    ) : testMode ? (
+      <TestModeApp />
+    ) : (
+      <App />
+    )}
   </React.StrictMode>
 );
 

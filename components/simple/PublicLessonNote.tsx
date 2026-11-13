@@ -18,12 +18,20 @@ const STATUS_TEXT: Record<NoteLanguage, { loading: string; missing: string; erro
   th: { loading: 'กำลังโหลดบันทึกบทเรียน…', missing: 'ไม่พบบันทึกบทเรียนนี้ โปรดขอลิงก์ใหม่จากโค้ช', error: 'โหลดไม่สำเร็จ โปรดลองอีกครั้งในภายหลัง' },
 };
 
-export const PublicLessonNote: React.FC<{ token: string }> = ({ token }) => {
+/**
+ * `token` 이면 서버에서 노트를 받아 오고(서버 모드), `data` 면 링크에 담겨 온
+ * 노트를 그대로 그린다(테스트 모드 — utils/noteLink.ts).
+ */
+export const PublicLessonNote: React.FC<{ token?: string; data?: PublicNote }> = ({
+  token,
+  data: inline,
+}) => {
   const [state, setState] = useState<
     { kind: 'loading' } | { kind: 'ready'; data: PublicNote } | { kind: 'missing' } | { kind: 'error' }
-  >({ kind: 'loading' });
+  >(inline ? { kind: 'ready', data: inline } : token ? { kind: 'loading' } : { kind: 'missing' });
 
   useEffect(() => {
+    if (inline || !token) return;
     let cancelled = false;
     apiService
       .getPublicLessonNote(token)
@@ -34,7 +42,7 @@ export const PublicLessonNote: React.FC<{ token: string }> = ({ token }) => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, inline]);
 
   const lang: NoteLanguage =
     state.kind === 'ready' && isNoteLanguage(state.data.note?.language)
@@ -56,8 +64,10 @@ export const PublicLessonNote: React.FC<{ token: string }> = ({ token }) => {
   const { data } = state;
   const note = data.note;
   return (
-    <main className="min-h-screen bg-base text-ink-high px-4 py-8 pt-safe pb-safe">
-      <article className="max-w-xl mx-auto flex flex-col gap-6">
+    // 기기 안전 영역(pt-safe/pb-safe)은 바깥에, 여백은 안쪽에 둔다 — 한 요소에
+    // 같이 쓰면 안전 영역 규칙이 py-* 를 덮어써 첫 줄이 화면 끝에 붙는다.
+    <main className="min-h-screen bg-base text-ink-high pt-safe pb-safe">
+      <article className="max-w-xl mx-auto px-4 py-8 flex flex-col gap-6">
         <header className="flex flex-col gap-1">
           <div className="text-[12px] font-mono uppercase tracking-wider text-emerald-300">
             ⛳ {L.title} · {data.date}

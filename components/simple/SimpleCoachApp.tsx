@@ -14,6 +14,28 @@ import {
   type NoteLanguage,
 } from '../../services/lessonClientNote';
 import { lessonNoteUrl } from '../../utils/publicAppUrl';
+
+/**
+ * 저장·공유를 맡는 쪽. 기본은 서버(레슨 저장 + 공유 토큰 링크 + 푸시)이고,
+ * 테스트 모드는 이 기기 저장 + 노트를 담은 링크로 바꿔 끼운다(TestModeApp).
+ */
+export interface SimpleCoachBackend {
+  saveLesson: (lesson: Lesson) => Promise<Lesson>;
+  /** 고객에게 보낼 링크. */
+  shareLink: (lesson: Lesson, note: LessonClientNote) => Promise<string>;
+  /** 저장 뒤 알림(회원 앱 푸시 등). 실패해도 전달은 그대로다. */
+  afterSave?: (lesson: Lesson) => void;
+}
+
+export const serverBackend: SimpleCoachBackend = {
+  saveLesson: (lesson) => apiService.saveLesson(lesson),
+  shareLink: async (lesson) => lessonNoteUrl((await apiService.shareLesson(lesson.id)).token),
+  afterSave: (lesson) => {
+    void import('../../services/notificationPreferenceService')
+      .then(({ notifyLessonUploaded }) => notifyLessonUploaded(lesson.id))
+      .catch(() => {});
+  },
+};
 import type { ClientProfile, Lesson, LessonClientNote } from '../../types';
 
 /**
@@ -168,8 +190,14 @@ export interface SimpleCoachAppProps {
   /** 이 코치의 레슨 기록 — 최근 보낸 노트 목록에 쓴다. */
   lessons: Lesson[];
   onLessonSaved: (lesson: Lesson) => void;
-  onOpenFullApp: () => void;
+  /** 없으면 설정에 "전체 기능" 버튼을 띄우지 않는다(테스트 모드). */
+  onOpenFullApp?: () => void;
   onLogout: () => void;
+  /** 설정의 로그아웃 버튼 문구를 바꾼다(테스트 모드: "테스트 설정"). */
+  logoutLabel?: string;
+  /** 화면 위에 띄우는 안내(테스트 모드 표시). */
+  banner?: string;
+  backend?: SimpleCoachBackend;
 }
 
 type Stage =
@@ -185,6 +213,9 @@ export const SimpleCoachApp: React.FC<SimpleCoachAppProps> = ({
   onLessonSaved,
   onOpenFullApp,
   onLogout,
+  logoutLabel,
+  banner,
+  backend = serverBackend,
 }) => {
   const { language, setLanguage } = useLanguage();
   const T = uiText(language);
@@ -217,6 +248,7 @@ export const SimpleCoachApp: React.FC<SimpleCoachAppProps> = ({
         recipient={stage.recipient}
         handoff={stage.handoff}
         defaultLanguage={isNoteLanguage(language) ? language : 'en'}
+        backend={backend}
         onBack={() => setStage({ kind: 'home' })}
         onSent={(lesson, note, url) => {
           onLessonSaved(lesson);
@@ -255,6 +287,9 @@ export const SimpleCoachApp: React.FC<SimpleCoachAppProps> = ({
       onOpenSent={(lesson, note, url) => setStage({ kind: 'sent', lesson, note, url })}
       onOpenFullApp={onOpenFullApp}
       onLogout={onLogout}
+      logoutLabel={logoutLabel}
+      banner={banner}
+      backend={backend}
     />
   );
 };
@@ -302,8 +337,11 @@ const HomeStep: React.FC<{
   onLanguageChange: (l: Language) => void;
   onStart: (r: Recipient) => void;
   onOpenSent: (lesson: Lesson, note: LessonClientNote, url: string) => void;
-  onOpenFullApp: () => void;
+  onOpenFullApp?: () => void;
   onLogout: () => void;
+  logoutLabel?: string;
+  banner?: string;
+  backend: SimpleCoachBackend;
 }> = ({
   T,
   coach,
@@ -316,6 +354,9 @@ const HomeStep: React.FC<{
   onOpenSent,
   onOpenFullApp,
   onLogout,
+  logoutLabel,
+  banner,
+  backend,
 }) => {
   const [name, setName] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -351,8 +392,8 @@ const HomeStep: React.FC<{
     if (!lesson.id || !lesson.liveLessonDetail?.clientNote) return;
     setOpening(lesson.id);
     try {
-      const { token } = await apiService.shareLesson(lesson.id);
-      onOpenSent(lesson, lesson.liveLessonDetail.clientNote, lessonNoteUrl(token));
+      const note = lesson.liveLessonDetail.clientNote;
+      onOpenSent(lesson, note, await backend.shareLink(lesson, note));
     } catch {
       // 링크를 못 만들면 목록에 그대로 둔다 — 다시 누르면 된다.
     } finally {
@@ -395,26 +436,34 @@ const HomeStep: React.FC<{
             </select>
           </label>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onOpenFullApp}
-              className="flex-1 h-10 rounded-lg border border-line-subtle text-[13px]"
-            >
-              {T.fullApp}
-            </button>
+            {onOpenFullApp && (
+              <button
+                type="button"
+                onClick={onOpenFullApp}
+                className="flex-1 h-10 rounded-lg border border-line-subtle text-[13px]"
+              >
+                {T.fullApp}
+              </button>
+            )}
             <button
               type="button"
               onClick={onLogout}
               className="flex-1 h-10 rounded-lg border border-line-subtle text-[13px] flex items-center justify-center gap-1.5"
             >
               <LogOut className="w-4 h-4" />
-              {T.logout}
+              {logoutLabel ?? T.logout}
             </button>
           </div>
         </div>
       )}
 
       <main className="flex-1 px-5 py-6 flex flex-col gap-8 max-w-xl w-full mx-auto">
+        {banner && (
+          <p className="rounded-lg bg-amber-500/10 border border-amber-400/30 px-3 py-2 text-[12px] text-amber-200">
+            {banner}
+          </p>
+        )}
+
         <StepBar steps={T.steps} active={0} />
 
         {notice && (
@@ -509,9 +558,10 @@ const NoteStep: React.FC<{
   recipient: Recipient;
   handoff: LiveLessonHandoff;
   defaultLanguage: NoteLanguage;
+  backend: SimpleCoachBackend;
   onBack: () => void;
   onSent: (lesson: Lesson, note: LessonClientNote, url: string) => void;
-}> = ({ T, coach, recipient, handoff, defaultLanguage, onBack, onSent }) => {
+}> = ({ T, coach, recipient, handoff, defaultLanguage, backend, onBack, onSent }) => {
   const [noteLanguage, setNoteLanguage] = useState<NoteLanguage>(defaultLanguage);
   const [draft, setDraft] = useState<{
     headline: string;
@@ -615,13 +665,9 @@ const NoteStep: React.FC<{
           clientNote: note,
         },
       };
-      const saved = await apiService.saveLesson(lesson);
-      const { token } = await apiService.shareLesson(saved.id);
-      const url = lessonNoteUrl(token);
-      // 회원 앱을 쓰는 고객에게는 푸시도 간다(실패해도 링크 전달은 그대로).
-      void import('../../services/notificationPreferenceService')
-        .then(({ notifyLessonUploaded }) => notifyLessonUploaded(saved.id))
-        .catch(() => {});
+      const saved = await backend.saveLesson(lesson);
+      const url = await backend.shareLink(saved, note);
+      backend.afterSave?.(saved);
       onSent(saved, note, url);
     } catch {
       setError(T.saveFailed);
