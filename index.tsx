@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { PublicLessonNote } from './components/simple/PublicLessonNote';
+import { readLessonNoteToken } from './utils/publicAppUrl';
 import {
   initStatusBar,
   hideSplashScreen,
@@ -16,9 +18,11 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+// 코치가 보낸 레슨 노트 링크(?note=<토큰>)는 로그인 없이 노트만 띄운다.
+const noteToken = readLessonNoteToken(window.location.search);
 root.render(
   <React.StrictMode>
-    <App />
+    {noteToken ? <PublicLessonNote token={noteToken} /> : <App />}
   </React.StrictMode>
 );
 

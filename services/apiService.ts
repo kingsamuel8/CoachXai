@@ -75,6 +75,15 @@ const ENDPOINT_NOT_FOUND_ERROR = 'Endpoint not found';
  * 때까지) 토큰이 서버에서 거절당하는 순간을 앱이 알아야 한다. 모르면
  * "로그인은 되어 있는데 아무 데이터도 안 보이는" 화면에 갇힌다.
  */
+/** 공유 링크로 열리는 레슨 노트(routes/publicNotes.ts 응답). */
+export interface PublicLessonNote {
+  coachName: string;
+  studentName: string;
+  date: string;
+  note: import('../types').LessonClientNote | null;
+  fallbackSummary: string;
+}
+
 export const SESSION_EXPIRED_EVENT = 'coachx:session-expired';
 
 /** Decode a JWT payload without verifying it — the server is the only party
@@ -475,6 +484,19 @@ export const apiService = {
     }
     const data = await req<{ lesson: Lesson }>('POST', '/api/lessons', lesson);
     return normalizeLessonMediaUrls(data.lesson);
+  },
+
+  /** 고객에게 보낼 레슨 노트 링크의 토큰을 만든다(이미 있으면 그대로). */
+  async shareLesson(lessonId: string): Promise<{ token: string }> {
+    return req<{ token: string }>('POST', `/api/lessons/${lessonId}/share`);
+  },
+
+  /** 로그인 없이 공유 링크로 레슨 노트를 읽는다. */
+  async getPublicLessonNote(token: string): Promise<PublicLessonNote> {
+    return req<PublicLessonNote>(
+      'GET',
+      `/api/public/lesson-notes/${encodeURIComponent(token)}`
+    );
   },
 
   async deleteLesson(lessonId: string): Promise<void> {

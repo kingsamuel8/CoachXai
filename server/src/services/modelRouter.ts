@@ -139,6 +139,11 @@ const FEATURE_MODEL_OVERRIDES: Record<string, string> = {
   // 검토 단계의 최종 용어 교정 — 레슨 기록에 남는 필기의 마지막 교정이다.
   // 레슨당 몇 번뿐이고 코치가 기다리는 단계라 pro 티어(2026-09-28).
   lesson_transcript_final_repair: 'gemini-3.1-pro-preview',
+
+  // 고객에게 보내는 레슨 노트 — 서비스가 고객에게 내놓는 결과물 그 자체다.
+  // 레슨당 1회이고 필기 전체에서 고객이 기억해야 할 것만 골라 고객 언어로
+  // 쓰는 장문 맥락 작업이라 요약 경로와 같은 pro 티어.
+  lesson_client_note: 'gemini-3.1-pro-preview',
 };
 
 interface CachedOverrides {
