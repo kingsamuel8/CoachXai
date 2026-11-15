@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ClientProfile,
-  CoachProfile,
   Lesson,
   ClubSpec,
   ClubCategory,

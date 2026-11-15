@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Lesson, ViewState, ClientProfile, CoachProfile, Homework, QuickLogEntry } from '../types';
+import { Lesson, ClientProfile, CoachProfile, Homework, QuickLogEntry } from '../types';
 import { LessonCard } from './LessonCard';
 import { LessonDetail } from './LessonDetail';
 import { ClientStats } from './ClientStats';
@@ -25,7 +25,7 @@ import { StudentHamburgerMenu, HamburgerAction } from './StudentHamburgerMenu';
 import { GrowthTimeline } from './GrowthTimeline';
 import { AIToneSettings } from './AIToneSettings';
 import { SwingVideoAnalysis } from './posture/SwingVideoAnalysis';
-import { PlayCircle, Filter, Eye, EyeOff, Target, Menu, UserCheck, ChevronRight, PenLine } from 'lucide-react';
+import { PlayCircle, Filter, Eye, EyeOff, Menu, UserCheck, ChevronRight, PenLine } from 'lucide-react';
 import { firebaseService } from '../services/firebase';
 import { storageService } from '../services/storage';
 import { apiService } from '../services/apiService';
@@ -119,8 +119,7 @@ export const ClientApp: React.FC<ClientAppProps> = ({ clientProfile, allLessons,
   }, []);
 
   const [tab, setTab] = useState<StudentTab>('HOME');
-  const [subView, setSubView] = useState<SubView | null>(initialSubView);
-  const [isEditingSubmit, setIsEditingSubmit] = useState(false); // reserved
+  const [subView, setSubView] = useState<SubView | null>(initialSubView); // reserved
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const [showToneModal, setShowToneModal] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -236,23 +235,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ clientProfile, allLessons,
     loadQuickLogs();
   }, [clientId, isFirebaseMode]);
 
-  const saveNewHomework = async (title: string) => {
-      const today = getLocalISODate();
-      const newHomework: Homework = {
-          id: crypto.randomUUID(),
-          clientId,
-          title: title.trim(),
-          isCompleted: false,
-          date: today,
-          createdAt: Date.now()
-      };
-
-      // Optimistic Update
-      setHomeworkList(prev => [newHomework, ...prev]);
-
-      await homeworkService.add(newHomework);
-  };
-
   // Called when HomeworkModal adds tasks
   const handleHomeworkUpdated = async () => {
       const hw = await homeworkService.listByClient(clientId);
@@ -260,11 +242,6 @@ export const ClientApp: React.FC<ClientAppProps> = ({ clientProfile, allLessons,
       setShowHomeworkModal(false);
       setNotification({ title: "미션 추가 완료", message: "새로운 미션이 등록되었습니다." });
   };
-
-  const todaysHomework = useMemo(() => {
-      const today = getLocalISODate();
-      return homeworkList.filter(h => h.date === today);
-  }, [homeworkList]);
 
   // Normalize a phone string to digits only so format differences
   // (010-1234-5678 vs 01012345678) don't prevent lessons from matching.
@@ -307,11 +284,9 @@ export const ClientApp: React.FC<ClientAppProps> = ({ clientProfile, allLessons,
     );
   }, [allLessons, clientProfile.name, clientProfile.phone, matchesMyPhone]);
   const totalRecordCount = myLessonsRaw.length;
-  const remainingFreeRecords = Math.max(0, FREE_RECORD_LIMIT - totalRecordCount);
   const todayAIUsage = useMemo(() => {
     return myLessonsRaw.filter((lesson) => lesson.date === today && !!lesson.aiAnalysis).length;
   }, [myLessonsRaw, today]);
-  const remainingDailyAI = Math.max(0, FREE_AI_DAILY_LIMIT - todayAIUsage);
 
   const handleBackToTab = () => {
     setSelectedLesson(null);

@@ -18,7 +18,6 @@ import React, { useMemo } from 'react';
 import {
   ChevronLeft,
   TrendingUp,
-  TrendingDown,
   Minus,
   Activity,
   Clock,

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CoachProfile } from '../types';
 import { Button } from './Button';
-import { X, User, Mail, Phone, CreditCard, Calendar, Users, LogOut, Edit2, Save, XCircle, CalendarDays, Bell, Megaphone } from 'lucide-react';
+import { X, User, Mail, Phone, CreditCard, Calendar, Users, LogOut, Edit2, Save, CalendarDays, Bell, Megaphone } from 'lucide-react';
 import { NotificationSettings } from './NotificationSettings';
 import { DataConsentSettings } from './DataConsentSettings';
 import { CoachBroadcastComposer } from './CoachBroadcastComposer';

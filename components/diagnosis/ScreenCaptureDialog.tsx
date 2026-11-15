@@ -11,7 +11,6 @@ interface ScreenCaptureDialogProps {
 export const ScreenCaptureDialog: React.FC<ScreenCaptureDialogProps> = ({ onCapture, onClose }) => {
   const { t } = useLanguage();
   const [availableScreens, setAvailableScreens] = useState<MediaStream[]>([]);
-  const [selectedScreenIndex, setSelectedScreenIndex] = useState<number>(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);

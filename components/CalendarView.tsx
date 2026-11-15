@@ -5,7 +5,6 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import koLocale from '@fullcalendar/core/locales/ko';
 import { reservationService } from '../services/reservationService';
-import { realtimeSubscribe, realtimeUnsubscribe, realtimeConnect } from '../services/realtime';
 import { LessonReservation, CoachProfile, ClientProfile } from '../types';
 import { X } from 'lucide-react';
 
@@ -138,31 +137,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     
     fetchEvents();
 
-    const onEvent = (payload: any) => {
-      if (!payload || !payload.event) return;
-      const reservation = payload.event as LessonReservation;
-      
-      // Filter out events that don't belong to this coach
-      if (coachProfile && reservation.coachId !== coachProfile.id) {
-        return;
-      }
-      
-      setEvents((prev) => {
-        const filtered = prev.filter((p) => String((p as any).id) !== String(reservation.id));
-        if (payload.action === 'delete') return filtered;
-        
-        const newEv: EventInput = {
-          id: String(reservation.id),
-          title: getEventTitle(reservation),
-          start: reservation.startTime,
-          end: reservation.endTime,
-          extendedProps: reservation,
-          backgroundColor: getStatusColor(reservation.status),
-        };
-        return [...filtered, newEv];
-      });
-    };
-
     // Handle window resize for mobile detection
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -170,10 +144,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
     window.addEventListener('resize', handleResize);
 
-    realtimeSubscribe('calendar', onEvent);
-    realtimeConnect();
     return () => {
-      realtimeUnsubscribe('calendar', onEvent);
       window.removeEventListener('resize', handleResize);
     };
   }, [coachProfile]);

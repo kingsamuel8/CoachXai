@@ -49,25 +49,8 @@ export async function createCurriculum(data: {
   return req('POST', '/api/curriculums', data);
 }
 
-export async function updateCurriculum(id: string, data: {
-  title: string;
-  description?: string;
-}): Promise<Curriculum> {
-  return req<Curriculum>('PUT', `/api/curriculums/${id}`, data);
-}
-
 export async function deleteCurriculum(id: string): Promise<void> {
   await req('DELETE', `/api/curriculums/${id}`);
-}
-
-// ── Parts ─────────────────────────────────────────────────────────────────
-
-export async function updateCurriculumPart(
-  curriculumId: string,
-  partId: string,
-  data: { title: string; content?: string; keyPoints?: string[] }
-): Promise<CurriculumPart> {
-  return req<CurriculumPart>('PUT', `/api/curriculums/${curriculumId}/parts/${partId}`, data);
 }
 
 // ── Student assignment & progress ─────────────────────────────────────────
@@ -105,12 +88,4 @@ export async function createPartLessonRecord(
   data: Omit<PartLessonRecord, 'id' | 'coachId' | 'createdAt' | 'updatedAt'>
 ): Promise<PartLessonRecord> {
   return req<PartLessonRecord>('POST', '/api/curriculums/lesson-records', data);
-}
-
-export async function updatePartLessonRecord(id: string, data: Partial<PartLessonRecord>): Promise<void> {
-  await req('PUT', `/api/curriculums/lesson-records/${id}`, data);
-}
-
-export async function deletePartLessonRecord(id: string): Promise<void> {
-  await req('DELETE', `/api/curriculums/lesson-records/${id}`);
 }

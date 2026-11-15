@@ -53,10 +53,6 @@ type ForegroundHandler = (payload: {
 let foregroundHandler: ForegroundHandler | null = null;
 let initialized = false;
 
-export function setForegroundNotificationHandler(handler: ForegroundHandler | null): void {
-  foregroundHandler = handler;
-}
-
 function isNativePlatform(): boolean {
   try {
     return Capacitor.isNativePlatform();

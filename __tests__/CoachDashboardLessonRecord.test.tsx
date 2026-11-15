@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import React from 'react';
 import App from '../App';
 
 vi.mock('../services/firebase', () => ({
@@ -91,12 +90,6 @@ vi.mock('../constants/featureFlags', () => ({
     automatedVideoEditing: false,
     swingAnalysisShortcut: false,
   },
-}));
-
-vi.mock('../services/realtime', () => ({
-  realtimeSubscribe: vi.fn().mockReturnValue(() => {}),
-  realtimeUnsubscribe: vi.fn(),
-  realtimeConnect: vi.fn(),
 }));
 
 vi.mock('../components/CalendarView', () => ({

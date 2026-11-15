@@ -7,7 +7,6 @@
  * 3. Overall summary tiles reflect total / fallback / worst-P95 correctly.
  * 4. Recent calls table shows individual log entries with status pills.
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import type { AiCallLog } from '../types';

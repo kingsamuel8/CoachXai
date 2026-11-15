@@ -8,7 +8,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { CoachClientManager } from '../components/CoachClientManager';
 import { MemberGrowthReport } from '../services/coachXService';
 import { ClientProfile } from '../types';

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { ClientReservation } from '../components/ClientReservation';
 import { reservationService } from '../services/reservationService';
 import { ClientProfile, LessonReservation } from '../types';

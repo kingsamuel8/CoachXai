@@ -17,7 +17,6 @@
 
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { NewLessonForm } from '../components/NewLessonForm';
 import { LanguageProvider } from '../components/LanguageContext';
 import { ClientProfile, CoachProfile, Lesson } from '../types';

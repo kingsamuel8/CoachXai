@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   BookOpen, ChevronLeft, ChevronRight, CheckCircle,
-  Clock, FileText, X, ClipboardList,
+  Clock, FileText, ClipboardList,
 } from 'lucide-react';
 import type {
   Curriculum, CurriculumPart, StudentCurriculumProgress,

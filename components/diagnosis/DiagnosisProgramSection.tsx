@@ -6,7 +6,7 @@ import { Button } from '../Button';
 import { calculateCourseMentalScore, calculateShortGameDiagnosisScore, calculateSkillScore, clampDiagnosisScore, getAgeFromBirthDate } from '../../utils/diagnosis';
 import { analyzeTrackmanData, calculateEquipmentScore, ClubEquipmentAnalysis, MetricAnalysisResult } from '../../utils/equipmentAnalysis';
 import { useLanguage } from '../LanguageContext';
-import { ChevronDown, ChevronUp, Plus, Trash2, Monitor, Camera, Loader2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Monitor, Camera, Loader2, Upload } from 'lucide-react';
 import { PostureAnalysisDashboard } from '../posture/PostureAnalysisDashboard';
 import { ScreenCaptureDialog } from './ScreenCaptureDialog';
 import { ShortGameDiagnosisSection } from './ShortGameDiagnosisSection';

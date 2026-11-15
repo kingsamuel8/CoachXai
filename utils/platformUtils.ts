@@ -32,11 +32,3 @@ export function isAndroid(): boolean {
 export function getPlatform(): 'ios' | 'android' | 'web' {
   return Capacitor.getPlatform() as 'ios' | 'android' | 'web';
 }
-
-/**
- * Returns true when the app is running inside a WebView (native build).
- * Alias for isNative().
- */
-export function isWebView(): boolean {
-  return Capacitor.isNativePlatform();
-}

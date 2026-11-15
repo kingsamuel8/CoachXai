@@ -580,10 +580,6 @@ const EventSnapshot: React.FC<EventSnapshotProps> = ({
     const v = event.metrics[key];
     return typeof v === 'number' && Number.isFinite(v) ? `${v.toFixed(1)}°` : '—';
   };
-  const metricMm = (key: string) => {
-    const v = event.metrics[key];
-    return typeof v === 'number' && Number.isFinite(v) ? `${v.toFixed(0)}mm` : '—';
-  };
   const metricSignedDeg = (key: string) => {
     const v = event.metrics[key];
     if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
@@ -756,17 +752,6 @@ const EventSnapshot: React.FC<EventSnapshotProps> = ({
     </div>
   );
 };
-
-function impactTone(
-  value: number | undefined,
-  okMax: number,
-  warnMax: number,
-): 'ok' | 'warn' | 'bad' | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  if (value <= okMax) return 'ok';
-  if (value <= warnMax) return 'warn';
-  return 'bad';
-}
 
 /**
  * Build an overlay line showing the swing plane trace: dashed segment from the

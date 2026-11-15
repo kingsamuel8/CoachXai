@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, LayoutGrid, TrendingUp, Users } from 'lucide-react';
+import { Activity, LayoutGrid, TrendingUp } from 'lucide-react';
 import type { Bay, BayReservation, CoachProfile } from '../types';
 import { firebaseService } from '../services/firebase';
 import { storageService } from '../services/storage';

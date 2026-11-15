@@ -1,8 +1,8 @@
 
 import React, { useMemo } from 'react';
 import { GolfData, Lesson } from '../types';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, Minus, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { TrendingUp } from 'lucide-react';
 import { lessonBelongsToClient } from '../utils/clientMatch';
 
 interface GolfDataVisualizerProps {

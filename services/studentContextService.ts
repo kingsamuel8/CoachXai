@@ -114,28 +114,6 @@ export const saveStudentContext = async (ctx: StudentContext): Promise<void> => 
   }
 };
 
-/**
- * Merge a partial update into the stored context. Callers pass only the
- * fields they know about; missing fields are preserved.
- */
-export const updateStudentContext = async (
-  clientId: string,
-  patch: Partial<StudentContext>
-): Promise<StudentContext> => {
-  const current = await getStudentContext(clientId);
-  const next: StudentContext = { ...current, ...patch, clientId, updatedAt: Date.now() };
-  await saveStudentContext(next);
-  return next;
-};
-
-/**
- * Invalidate the in-memory cache for a given client. Useful when the caller
- * knows a background writer just updated Firestore.
- */
-export const invalidateStudentContext = (clientId: string): void => {
-  inMemoryCache.delete(clientId);
-};
-
 // ── Greeting builder ────────────────────────────────────────────────────────
 
 type Language = 'ko' | 'en' | 'ja';

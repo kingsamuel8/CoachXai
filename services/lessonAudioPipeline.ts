@@ -516,8 +516,6 @@ const SESSION_STORE = 'sessions'; // 세션 메타(JSON)
 const chunkKey = (sessionId: string, n: number) =>
   // 사전순 == 숫자순이 되도록 zero-pad. 50분 / 5s = 600청크라 5자리면 넉넉하다.
   `chunk:${sessionId}:${String(n).padStart(5, '0')}`;
-const segmentKey = (sessionId: string, n: number) =>
-  `seg:${sessionId}:${String(n).padStart(4, '0')}`;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -1207,40 +1205,6 @@ const transcribeSchema = {
   },
   required: ['turns'],
 } as const;
-
-/**
- * 기본 필기 분석기 — ~10초 구간을 전사만 한다(요약·구조화 없음).
- * 결과는 transcript(+화자 라벨이 붙은 turns)만 채워진 LessonSegmentNote
- * 로 흘러들어, 병합 요약·복구·핸드오프 등 기존 노트 경로를 그대로 탄다.
- */
-export const transcribeLessonAudioSegment: SegmentAnalyzer = async (
-  blob,
-  mimeType,
-  ctx
-) => {
-  const data = await blobToBase64(blob);
-  const result = await invokeBackendAI<unknown>('lesson_audio_transcribe', {
-    prompt: buildTranscribePrompt(ctx),
-    mediaParts: [{ inlineData: { data, mimeType } }],
-    responseMimeType: 'application/json',
-    responseSchema: transcribeSchema,
-  });
-  const text = getResponseText(result);
-  if (text == null) throw new Error('전사 응답이 비어 있습니다.');
-  const turns = parseTranscriptTurns(text);
-  return {
-    index: ctx.index,
-    startSec: ctx.startSec,
-    durationSec: ctx.durationSec,
-    status: 'done',
-    transcript: joinTranscriptTurns(turns),
-    turns,
-    keyPoints: [],
-    drills: [],
-    metrics: [],
-    studentState: '',
-  };
-};
 
 // ─── 코칭 언어 교정 (텍스트 경로) ───────────────────────────────────────────
 
@@ -2158,20 +2122,6 @@ export const labelTranscriptSpeakers = async (
   });
 };
 
-// ─── Segment analysis (AI call) ──────────────────────────────────────────────
-
-const segmentNoteSchema = {
-  type: 'OBJECT',
-  properties: {
-    transcript: { type: 'STRING' },
-    keyPoints: { type: 'ARRAY', items: { type: 'STRING' } },
-    drills: { type: 'ARRAY', items: { type: 'STRING' } },
-    metrics: { type: 'ARRAY', items: { type: 'STRING' } },
-    studentState: { type: 'STRING' },
-  },
-  required: ['transcript', 'keyPoints', 'drills', 'metrics', 'studentState'],
-} as const;
-
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2189,28 +2139,6 @@ export type SegmentAnalyzer = (
   mimeType: string,
   ctx: SegmentPromptContext
 ) => Promise<LessonSegmentNote>;
-
-/** 기본 세그먼트 분석기 — 백엔드 AI 게이트웨이의 `lesson_audio_segment` 호출. */
-export const analyzeLessonAudioSegment: SegmentAnalyzer = async (
-  blob,
-  mimeType,
-  ctx
-) => {
-  const data = await blobToBase64(blob);
-  const result = await invokeBackendAI<unknown>('lesson_audio_segment', {
-    prompt: buildSegmentPrompt(ctx),
-    mediaParts: [{ inlineData: { data, mimeType } }],
-    responseMimeType: 'application/json',
-    responseSchema: segmentNoteSchema,
-  });
-  const text = getResponseText(result);
-  if (!text) throw new Error('세그먼트 분석 응답이 비어 있습니다.');
-  return parseSegmentNoteResponse(text, {
-    index: ctx.index,
-    startSec: ctx.startSec,
-    durationSec: ctx.durationSec,
-  });
-};
 
 // ─── Analysis queue ──────────────────────────────────────────────────────────
 
@@ -3527,10 +3455,6 @@ export class LessonAudioSession {
 
 /** 살아있는 세션(녹음 중이거나 방금 종료돼 분석이 진행 중인 것)의 레지스트리. */
 const registry = new Map<string, LessonAudioSession>();
-
-export const getLiveLessonSession = (
-  sessionId: string
-): LessonAudioSession | undefined => registry.get(sessionId);
 
 /**
  * 세션의 최신 세그먼트 노트를 수집한다. 살아있는 세션이면 진행 중인 분석을

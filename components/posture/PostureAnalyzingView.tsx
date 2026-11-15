@@ -267,7 +267,6 @@ function drawFrame(
       if (nose && sh) {
         const nx = nose.x * W, ny = nose.y * H;
         const sx = sh.x * W, sy = sh.y * H;
-        const forwardDist = (nx - sx) / W;
         const headAngle = Math.atan2(nx - sx, sy - ny) * 180 / Math.PI;
 
         ctx.setLineDash([5, 3]);

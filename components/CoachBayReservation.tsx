@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Branch, Bay, CoachProfile } from '../types';
+import { Branch, CoachProfile } from '../types';
 import {
   bayReservationService,
   TimeSlot,

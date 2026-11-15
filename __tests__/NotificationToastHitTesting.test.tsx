@@ -12,7 +12,6 @@
  * The hidden toast must therefore be inert: no pointer events, and
  * `visibility: hidden` so it drops out of hit-testing entirely.
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { NotificationToast } from '../components/NotificationToast';

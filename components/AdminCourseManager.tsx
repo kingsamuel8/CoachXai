@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { GolfCourse } from '../types';
 import { Button } from './Button';
-import { MapPin, Plus, Save, Trash2, Search, AlertCircle } from 'lucide-react';
+import { MapPin, Plus, Save, Trash2, Search } from 'lucide-react';
 import { firebaseService } from '../services/firebase';
 import { storageService } from '../services/storage';
 

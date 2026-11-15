@@ -10,7 +10,6 @@
  * 5. Template cards render a scope badge distinguishing global vs coach-scoped.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AdminPromptManager } from '../components/AdminPromptManager';
