@@ -1,13 +1,14 @@
-# Weekly logical backup of the Render Postgres database to Cloudflare R2.
+# Weekly logical backup of the Supabase Postgres database to Cloudflare R2.
 #
-# Why this exists (docs/DATA_ARCHITECTURE.md §10.2): Render's automatic
-# backups have a short retention window. This workflow keeps independent
+# Why this exists (docs/DATA_ARCHITECTURE.md §10.2): the managed database's
+# automatic backups have a short retention window (Supabase Free: none). This workflow keeps independent
 # pg_dump archives under our own control so "the data looked wrong last
 # month" class problems stay recoverable.
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
-#   RENDER_DATABASE_URL   External Database URL from the Render dashboard
-#                         (postgres://...render.com/...?sslmode=require)
+#   SUPABASE_DATABASE_URL Supabase "Session pooler" connection string
+#                         (postgresql://postgres.<ref>:<pw>@aws-...pooler.supabase.com:5432/postgres)
+#                         The old RENDER_DATABASE_URL secret is still read as a fallback.
 #   R2_ENDPOINT           https://<account-id>.r2.cloudflarestorage.com
 #   R2_ACCESS_KEY_ID      R2 API token key with write access to the bucket
 #   R2_SECRET_ACCESS_KEY  matching secret
@@ -41,13 +42,16 @@ jobs:
 
       - name: Dump database
         env:
-          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL || secrets.RENDER_DATABASE_URL }}
         run: |
           STAMP=$(date -u +%Y%m%d_%H%M)
           FILE="coachx_${STAMP}.dump"
           echo "FILE=$FILE" >> "$GITHUB_ENV"
           # Custom format (-Fc): compressed, restorable table-by-table.
-          pg_dump "$DATABASE_URL" -Fc --no-owner --no-privileges -f "$FILE"
+          # --schema=public: the app's tables only. Supabase's own schemas
+          # (auth, storage, realtime, ...) are managed by Supabase and are not
+          # readable/restorable by the app role.
+          pg_dump "$DATABASE_URL" -Fc --no-owner --no-privileges --schema=public -f "$FILE"
           ls -lh "$FILE"
 
       - name: Verify dump integrity
