@@ -58,10 +58,10 @@ export interface ChatThreadDoc {
   updatedAt: number;
   messages: unknown[];
 }
-import { resolveApiBaseUrl } from './apiBase';
+import { API_TOKEN_KEY, resolveApiBaseUrl } from './apiBase';
 
 const BASE_URL = resolveApiBaseUrl();
-const TOKEN_KEY = 'swingnote_api_token';
+const TOKEN_KEY = API_TOKEN_KEY;
 const LESSON_NOT_FOUND_ERROR = 'Lesson not found or access denied';
 const HTTP_404_ERROR = 'HTTP 404';
 /** Prefix of the server's catch-all response for an unrouted /api path. */

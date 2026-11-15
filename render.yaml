@@ -50,4 +50,11 @@ services:
         sync: false
       - key: GEMINI_MODEL
         sync: false
+      # AI gateway access (server/src/middleware/aiAccess.ts). Optional:
+      # defaults are coach,admin and 60 calls per account per minute. Add
+      # "client" to re-open the student app's AI features.
+      - key: AI_ALLOWED_ROLES
+        sync: false
+      - key: AI_RATE_LIMIT_PER_MIN
+        sync: false
 

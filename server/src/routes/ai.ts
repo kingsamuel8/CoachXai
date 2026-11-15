@@ -16,7 +16,8 @@ import {
   isModelFallbackError,
 } from '../services/geminiApiRuntime';
 import { getDefaultModel, resolveModel } from '../services/modelRouter';
-import { optionalAuth } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
+import { aiUserLimiter, requireAiRole } from '../middleware/aiAccess';
 import {
   AiInteractionEntry,
   hashPrompt,
@@ -161,9 +162,10 @@ const MAX_STREAM_CAPTURE_CHARS = 100_000;
 
 const router = Router();
 
-// Attach the caller's identity to ai_interactions rows when a token is
-// present, without turning the AI gateway into an auth wall.
-router.use(optionalAuth);
+// Only signed-in coaches (and admins) may spend the server's Gemini key, with
+// a per-account rate limit — see middleware/aiAccess.ts. /status stays open:
+// it only reports which runtimes are configured.
+const aiGate = [authMiddleware, requireAiRole, aiUserLimiter];
 
 router.get('/status', (_req: Request, res: Response) => {
   const legacy = getAgentRuntimeStatus();
@@ -174,7 +176,7 @@ router.get('/status', (_req: Request, res: Response) => {
   });
 });
 
-router.post('/invoke', async (req: Request, res: Response) => {
+router.post('/invoke', ...aiGate, async (req: Request, res: Response) => {
   const startedAt = Date.now();
   // Telemetry base survives into the catch block; null until the request parses.
   let telemetry: Omit<AiInteractionEntry, 'latencyMs' | 'status'> | null = null;
@@ -340,7 +342,7 @@ router.post('/invoke', async (req: Request, res: Response) => {
  * Chunks are yielded as they arrive from Gemini so the client can render
  * incrementally. The server never buffers the full response.
  */
-router.post('/invoke-stream', async (req: Request, res: Response) => {
+router.post('/invoke-stream', ...aiGate, async (req: Request, res: Response) => {
   const { feature, payload } = req.body as {
     feature?: string;
     payload?: unknown;

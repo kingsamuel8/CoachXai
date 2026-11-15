@@ -23,3 +23,24 @@ export function resolveApiBaseUrl(): string {
   }
   return '';
 }
+
+/** localStorage key holding the server's login JWT (written by apiService). */
+export const API_TOKEN_KEY = 'swingnote_api_token';
+
+/**
+ * Headers for a JSON request to our server, with the login token when there
+ * is one. The AI gateway (/api/ai/invoke, /invoke-stream) rejects calls
+ * without a coach token, so every AI fetch must go through this.
+ */
+export function jsonAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(API_TOKEN_KEY) : null;
+    if (token && token !== 'undefined' && token !== 'null') {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // storage blocked (private mode etc.): send without a token
+  }
+  return headers;
+}

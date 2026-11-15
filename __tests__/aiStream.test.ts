@@ -22,7 +22,8 @@ vi.mock('../services/firebase', () => ({
   },
 }));
 
-vi.mock('../services/apiBase', () => ({
+vi.mock('../services/apiBase', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/apiBase')>()),
   resolveApiBaseUrl: () => '',
 }));
 
@@ -86,6 +87,21 @@ describe('invokeBackendAIStream', () => {
 
     expect(chunks).toEqual(['Hello, ', 'world!']);
     expect(result).toBe('Hello, world!');
+  });
+
+  it('sends the stored login token — the AI gateway is coaches-only', async () => {
+    localStorage.setItem('swingnote_api_token', 'coach-jwt');
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      okResponse(['event: done\ndata: {"status":"ok"}\n\n'])
+    );
+    globalThis.fetch = fetchMock;
+    try {
+      await invokeBackendAIStream('coachx_chat', { prompt: 'hi' });
+    } finally {
+      localStorage.removeItem('swingnote_api_token');
+    }
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer coach-jwt');
   });
 
   it('handles events split across chunk boundaries', async () => {
