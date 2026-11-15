@@ -154,7 +154,7 @@ describe('Coach app shell (post-redesign)', () => {
       expect(screen.getByTestId('diagnosis-program-section')).toBeInTheDocument();
     });
     expect(screen.getAllByText('골퍼 기본정보 입력').length).toBeGreaterThan(0);
-    expect(screen.getByText('프로세스 1 / 6')).toBeInTheDocument();
+    expect(screen.getByText('프로세스 1 / 7')).toBeInTheDocument();
     expect(screen.getByTestId('diagnosis-view-result-btn')).toBeInTheDocument();
   });
 
@@ -204,8 +204,13 @@ describe('Coach app shell (post-redesign)', () => {
     fireEvent.change(screen.getByTestId('diagnosis-score-input-skill'), {
       target: { value: '80' },
     });
+    // 숏게임 퍼포먼스 테스트 — optional, skip without input.
     fireEvent.click(screen.getByTestId('diagnosis-next-step-btn'));
-    fireEvent.change(screen.getByTestId('diagnosis-course-mental-input'), {
+    fireEvent.click(screen.getByTestId('diagnosis-next-step-btn'));
+    fireEvent.change(screen.getByTestId('diagnosis-course-note-input'), {
+      target: { value: '공략 루트 선택이 보수적' },
+    });
+    fireEvent.change(screen.getByTestId('diagnosis-mental-note-input'), {
       target: { value: '멘탈 루틴 안정적' },
     });
     fireEvent.click(screen.getByTestId('diagnosis-next-step-btn'));

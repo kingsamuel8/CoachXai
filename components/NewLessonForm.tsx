@@ -1475,7 +1475,7 @@ export const NewLessonForm: React.FC<NewLessonFormProps> = ({
           `${trimmedClientName}_${trimmedClientPhone}`,
         clientName: trimmedClientName,
         clientPhone: trimmedClientPhone,
-        coachId: userRole === 'CLIENT' ? currentUser?.coachId : undefined, // Assign coachId if created by client
+        coachId: userRole === 'CLIENT' && currentUser && 'coachId' in currentUser ? currentUser.coachId : undefined, // Assign coachId if created by client
         createdBy: userRole as 'COACH' | 'CLIENT',
         recordType,
         date: initialData ? initialData.date : getLocalISODate(),

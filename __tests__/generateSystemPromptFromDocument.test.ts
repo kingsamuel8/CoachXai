@@ -8,10 +8,16 @@
  * 3. Rejects when the AI returns an empty/invalid systemPrompt.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateSystemPromptFromDocument } from '../services/geminiService';
 
 describe('generateSystemPromptFromDocument', () => {
+  // generate_system_prompt responses are cached in localStorage; without a
+  // reset, later tests get an earlier test's response instead of their mock.
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

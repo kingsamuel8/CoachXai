@@ -115,7 +115,7 @@ export const CoachAIHome: React.FC<CoachAIHomeProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { revealedChars, startReveal, clearReveal } = useTypingReveal(1800);
+  const { revealedChars, clearReveal } = useTypingReveal(1800);
   const { isSpeaking, speak, stopSpeaking } = useTextToSpeech(language, ttsEnabled);
 
   useEffect(() => {

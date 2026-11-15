@@ -125,8 +125,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   const [editingHoles, setEditingHoles] = useState<HoleRecord[]>([]);
 
   // Video Player State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   // Video Editor State
@@ -238,8 +236,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   }, []);
 
   const resetPlayerState = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
       setDuration(0);
       setMediaError(false);
   };
@@ -559,12 +555,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   const showTempNotification = (msg: string) => {
       setTempNotification(msg);
       setTimeout(() => setTempNotification(null), 2000);
-  };
-
-  const handleTimeUpdate = () => {
-      if (mediaElementRef.current) {
-          setCurrentTime(mediaElementRef.current.currentTime);
-      }
   };
 
   const handleLoadedMetadata = () => {
@@ -1296,13 +1286,10 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
                                 playsInline
                                 controls
                                 preload="metadata"
-                                onTimeUpdate={handleTimeUpdate}
                                 onLoadedMetadata={handleLoadedMetadata}
-                                onEnded={() => setIsPlaying(false)}
                                 onError={() => setMediaError(true)}
                                 key={safeActiveMediaUrl}
-                                onPlay={() => { setIsPlaying(true); setMediaError(false); }}
-                                onPause={() => setIsPlaying(false)}
+                                onPlay={() => setMediaError(false)}
                             />
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-ink-muted">

@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ClientReservation } from '../components/ClientReservation';
 import { reservationService } from '../services/reservationService';
-import { ClientProfile, LessonReservation } from '../types';
+import { storageService } from '../services/storage';
+import { ClientProfile, CoachProfile, LessonReservation } from '../types';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -11,8 +12,8 @@ vi.mock('../services/reservationService', () => ({
     getAvailableSlots: vi.fn(),
     getAvailableWorkingHourSlots: vi.fn(),
     getClientReservations: vi.fn(),
-    requestReservation: vi.fn(),
-    requestReservationWithTime: vi.fn(),
+    confirmAvailableSlotByStudent: vi.fn(),
+    confirmReservationWithTimeByStudent: vi.fn(),
     cancelReservation: vi.fn(),
     requestCancellationByMember: vi.fn(),
     requestChangeByMember: vi.fn(),
@@ -40,35 +41,40 @@ const makeSlot = (id: string, hour: number): LessonReservation => ({
   updatedAt: 1000,
 });
 
+const MOCK_COACH = { id: 'coach1', name: '김코치' } as CoachProfile;
+
 const SLOT_A = makeSlot('slot-a', 10);
 const SLOT_B = makeSlot('slot-b', 14);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function openReservationForm() {
-  fireEvent.click(screen.getByText('예약 신청하기'));
+/** The form only appears once the coach list has loaded and a coach is picked. */
+async function openReservationForm() {
+  fireEvent.click(await screen.findByText('예약 확정하기'));
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('ClientReservation – date-based time slot selection', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(storageService, 'getCoaches').mockReturnValue([MOCK_COACH]);
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([]);
     vi.mocked(reservationService.getAvailableSlots).mockResolvedValue([]);
     vi.mocked(reservationService.getClientReservations).mockResolvedValue([]);
   });
 
-  it('renders the reservation form after clicking 예약 신청하기', async () => {
+  it('renders the reservation form after clicking 예약 확정하기', async () => {
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
-    expect(await screen.findByText('레슨 예약 신청')).toBeInTheDocument();
+    await openReservationForm();
+    expect(await screen.findByText('레슨 예약 확정')).toBeInTheDocument();
   });
 
   it('loads available slots for the selected date when date changes', async () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A, SLOT_B]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     const dateInput = screen.getByLabelText('날짜');
     fireEvent.change(dateInput, { target: { value: '2026-04-10' } });
@@ -85,7 +91,7 @@ describe('ClientReservation – date-based time slot selection', () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A, SLOT_B]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
@@ -100,7 +106,7 @@ describe('ClientReservation – date-based time slot selection', () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
@@ -115,7 +121,7 @@ describe('ClientReservation – date-based time slot selection', () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A, SLOT_B]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
@@ -129,7 +135,7 @@ describe('ClientReservation – date-based time slot selection', () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
@@ -144,7 +150,7 @@ describe('ClientReservation – date-based time slot selection', () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A]);
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
@@ -158,27 +164,27 @@ describe('ClientReservation – date-based time slot selection', () => {
     expect(endInput.value).toBe('11:00');
   });
 
-  it('calls requestReservation (with slot ID) when a pre-set slot is selected and form is submitted', async () => {
+  it('confirms the pre-set slot (by slot ID) when one is selected and the form is submitted', async () => {
     vi.mocked(reservationService.getAvailableWorkingHourSlots).mockResolvedValue([SLOT_A]);
-    vi.mocked(reservationService.requestReservation).mockResolvedValue({
+    vi.mocked(reservationService.confirmAvailableSlotByStudent).mockResolvedValue({
       ...SLOT_A,
-      status: 'PENDING',
+      status: 'CONFIRMED',
     });
 
     const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     fireEvent.change(screen.getByLabelText('날짜'), { target: { value: '2026-04-10' } });
 
     const slotButton = await screen.findByTestId('time-slot-slot-a');
     fireEvent.click(slotButton);
 
-    fireEvent.click(screen.getByText('예약 요청'));
+    fireEvent.click(screen.getByRole('button', { name: '예약 확정' }));
 
     await waitFor(() => {
-      expect(reservationService.requestReservation).toHaveBeenCalledWith(
+      expect(reservationService.confirmAvailableSlotByStudent).toHaveBeenCalledWith(
         'slot-a',
         '홍길동_010-1234-5678',
         '홍길동',
@@ -196,7 +202,7 @@ describe('ClientReservation – date-based time slot selection', () => {
       .mockResolvedValueOnce([]);      // second date selection (no slots)
 
     render(<ClientReservation clientProfile={MOCK_CLIENT} onBack={vi.fn()} />);
-    openReservationForm();
+    await openReservationForm();
 
     const dateInput = screen.getByLabelText('날짜');
 

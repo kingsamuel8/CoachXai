@@ -118,8 +118,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
 
-  const [signupSuccess, setSignupSuccess] = useState(false);
-
   /**
    * 가입 이메일 인증. 서버가 보낸 6자리 코드를 확인해야 가입 버튼이
    * 통과한다. `verifiedEmail`에 확인이 끝난 주소를 그대로 담아 두고 현재
@@ -175,7 +173,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setPassword('');
     setName('');
     setPhone('');
-    setSignupSuccess(false);
     resetEmailVerification();
     setIsConsentChecked(false);
     setBranchAdminLoginId('');

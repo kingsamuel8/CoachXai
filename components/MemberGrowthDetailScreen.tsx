@@ -288,7 +288,7 @@ export const MemberGrowthDetailScreen: React.FC<MemberGrowthDetailScreenProps> =
 }) => {
   const { t } = useLanguage();
   const tc = trendConfig(report.trendIndicator, t);
-  const { text: scoreText, label: scoreLabel } = scoreColor(report.growthScore);
+  const { text: scoreText } = scoreColor(report.growthScore);
 
   // Label for lesson cadence
   const cadenceLabel = useMemo(() => {

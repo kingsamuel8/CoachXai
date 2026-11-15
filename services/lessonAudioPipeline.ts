@@ -2546,7 +2546,6 @@ export class LessonAudioSession {
   private liveSummary = '';
   private liveSummaryUpdating = false;
 
-  private stream: MediaStream | null = null;
   private recorder: MediaRecorder | null = null;
 
   /** 현재 런의 archive 청크(메모리). 이전 런의 청크는 IDB 에만 있다. */
@@ -2731,7 +2730,6 @@ export class LessonAudioSession {
       }
       this.recorder = null;
     }
-    this.stream = stream;
     this.speech.attach(stream);
     this.runs.push({ firstChunk: this.chunkCount, baseSec: this.recordedSec });
     this.archiveChunks = [];

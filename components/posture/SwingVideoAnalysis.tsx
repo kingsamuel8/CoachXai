@@ -1337,12 +1337,7 @@ const KineticChart: React.FC<{ ks: KineticSequence }> = ({ ks }) => {
   // Peak markers relative to the chart window (frameIndices[0] = 0).
   const peakMarker = (peak: KineticSegmentPeak | undefined, color: string) => {
     if (!peak) return null;
-    const idx = tl.frameIndices.findIndex((fi) => {
-      // peakT is in seconds; the timeline stores frameIndices. Approximate by
-      // matching the closest frame — good enough for a marker.
-      return true;
-    });
-    // Simpler: find slot with the max value in the drawn series matching this segment.
+    // Find slot with the max value in the drawn series matching this segment.
     const series =
       peak.segment === 'pelvis'
         ? tl.pelvis

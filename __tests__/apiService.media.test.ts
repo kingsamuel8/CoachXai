@@ -346,7 +346,7 @@ describe('apiService media helpers', () => {
       createdAt: Date.now(),
     };
 
-    const mockFetch = vi.fn(async () => new Response(
+    const mockFetch = vi.fn(async (_url: string, _opts?: RequestInit) => new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     ));

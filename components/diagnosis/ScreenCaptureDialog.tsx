@@ -151,7 +151,7 @@ export const ScreenCaptureDialog: React.FC<ScreenCaptureDialogProps> = ({ onCapt
         <div className="flex items-center justify-between gap-3">
           <Button
             onClick={handleChangeScreen}
-            variant="outline"
+            variant="secondary"
             className="flex items-center gap-2"
             data-testid="change-screen-btn"
           >

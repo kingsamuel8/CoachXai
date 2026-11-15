@@ -36,7 +36,6 @@ import { ReservationManager } from './components/ReservationManager';
 import { CoachBayReservation } from './components/CoachBayReservation';
 import { MyBayReservations } from './components/MyBayReservations';
 import { CoachReservationNotificationModal } from './components/CoachReservationNotificationModal';
-import { CoachLessonReservationModal } from './components/CoachLessonReservationModal';
 import { LessonPackageManager } from './components/LessonPackageManager';
 import { TrainingProgramGenerator } from './components/TrainingProgramGenerator';
 import { LessonStartPromptModal } from './components/LessonStartPromptModal';
@@ -277,9 +276,6 @@ const AppContent: React.FC = () => {
   const [liveLessonReservationsLoading, setLiveLessonReservationsLoading] = useState(false);
   const [isEditingLesson, setIsEditingLesson] = useState(false); // Track editing mode
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | undefined>(undefined); // Pre-fill date from calendar click
-  const [coachLessonModalDate, setCoachLessonModalDate] = useState<string | undefined>(undefined);
-  const [coachLessonModalHour, setCoachLessonModalHour] = useState<number>(9);
-  const [showCoachLessonModal, setShowCoachLessonModal] = useState(false);
 
   // Lesson Package State
   const [lessonPackages, setLessonPackages] = useState<LessonPackage[]>([]);
@@ -307,7 +303,6 @@ const AppContent: React.FC = () => {
   // Training Program State
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingProgram[]>([]);
   const [selectedClientForTraining, setSelectedClientForTraining] = useState<ClientProfile | null>(null);
-  const [trainingProgramReturnView, setTrainingProgramReturnView] = useState<ViewState>('CLIENTS');
   const [selectedDiagnosisSession, setSelectedDiagnosisSession] = useState<DiagnosisSavedSession | null>(null);
   const selectedDiagnosisClient = useMemo(
     () => clients.find((client) => client.name === selectedClientFilter) ?? null,
@@ -396,6 +391,15 @@ const AppContent: React.FC = () => {
     };
   }, [userRole]);
 
+  /** 골프 시작일 → 만 경력 연수. 날짜가 없거나 깨졌으면 null. */
+  const yearsSince = (isoDate?: string): number | null => {
+    if (!isoDate) return null;
+    const start = new Date(isoDate);
+    if (Number.isNaN(start.getTime())) return null;
+    const years = (Date.now() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    return years >= 0 ? Math.floor(years) : null;
+  };
+
   const initialDiagnosisGolferProfile = useMemo<Partial<GolferProfile> | undefined>(() => {
     if (!selectedDiagnosisClient) return undefined;
     return {
@@ -403,7 +407,7 @@ const AppContent: React.FC = () => {
       contact: selectedDiagnosisClient.phone,
       handicap: selectedDiagnosisClient.handicap ?? null,
       bestScore: selectedDiagnosisClient.bestScore ?? null,
-      golfStartDate: selectedDiagnosisClient.golfStartDate ?? '',
+      yearsOfExperience: yearsSince(selectedDiagnosisClient.golfStartDate),
     };
   }, [selectedDiagnosisClient]);
 
@@ -1362,7 +1366,7 @@ const AppContent: React.FC = () => {
     const isFb = apiService.isAvailable();
     try {
       if (isFb) {
-        await apiService.deleteLesson(lessonId, lessonToDelete);
+        await apiService.deleteLesson(lessonId);
       } else {
         storageService.saveLessons(updatedLessons);
       }
@@ -1878,7 +1882,7 @@ const AppContent: React.FC = () => {
     const updatedUser = {
       ...targetUser,
       isSubscribed: newStatus,
-      subscriptionPlan: newStatus ? 'PRO' : 'FREE',
+      subscriptionPlan: (newStatus ? 'PRO' : 'FREE') as 'PRO' | 'FREE',
       subscriptionEndDate: newStatus ? targetUser.subscriptionEndDate : undefined,
     };
     await updateUserState(updatedUser);
@@ -1908,7 +1912,7 @@ const AppContent: React.FC = () => {
     const updatedUser = {
       ...targetUser,
       isSubscribed: true,
-      subscriptionPlan: 'PRO',
+      subscriptionPlan: 'PRO' as const,
       subscriptionEndDate: endDate,
     };
     await updateUserState(updatedUser);
@@ -2629,7 +2633,7 @@ const AppContent: React.FC = () => {
             coachId={(currentUser as CoachProfile).id}
             programs={trainingPrograms}
             onBack={() => {
-              setCoachView(trainingProgramReturnView);
+              setCoachView('CLIENTS');
               setSelectedClientForTraining(null);
             }}
             onSaveProgram={handleSaveTrainingProgram}
@@ -2799,19 +2803,6 @@ const AppContent: React.FC = () => {
           }}
           onGoToReservations={() => {
             setCoachView('RESERVATIONS');
-          }}
-        />
-      )}
-
-      {/* Coach-created member lesson reservation modal */}
-      {showCoachLessonModal && coachLessonModalDate !== undefined && currentUser && 'id' in currentUser && (
-        <CoachLessonReservationModal
-          coachProfile={currentUser as CoachProfile}
-          initialDate={coachLessonModalDate}
-          initialHour={coachLessonModalHour}
-          onClose={() => setShowCoachLessonModal(false)}
-          onSaved={() => {
-            setShowCoachLessonModal(false);
           }}
         />
       )}
