@@ -5,7 +5,7 @@ Express 서버(API·로그인·결제 웹훅·R2·푸시·AI)는 그대로 Rende
 
 | 항목 | 값 |
 |---|---|
-| Supabase 프로젝트 | `kingsamuel8's Project` (id `zmujcnbqoxursadvkopq`, ap-southeast-1 싱가포르) |
+| Supabase 프로젝트 | `coachxai` (id `hjbgdgwupbmcbqjtufzj`, ap-northeast-2 서울) |
 | 스키마 | `server/migrations/` 0001–0013 적용 완료 (`pgmigrations` 13행) |
 | 공개 API | 막음 — 아래 "보안" 참고 |
 | 옮긴 데이터 | 없음 (새로 시작) |
@@ -14,7 +14,7 @@ Express 서버(API·로그인·결제 웹훅·R2·푸시·AI)는 그대로 Rende
 
 1. Supabase 대시보드 → 프로젝트 → **Connect** → **Session pooler** 연결 문자열을 복사한다.
    ```
-   postgresql://postgres.zmujcnbqoxursadvkopq:[YOUR-PASSWORD]@aws-<n>-ap-southeast-1.pooler.supabase.com:5432/postgres
+   postgresql://postgres.hjbgdgwupbmcbqjtufzj:[YOUR-PASSWORD]@aws-<n>-ap-northeast-2.pooler.supabase.com:5432/postgres
    ```
    - `[YOUR-PASSWORD]`는 DB 비밀번호(Project Settings → Database에서 재설정 가능).
    - **Direct connection(`db.<ref>.supabase.co`)은 쓰지 않는다** — IPv6 전용이라 Render에서 닿지 않는다.
@@ -53,8 +53,9 @@ Supabase 무료 플랜에는 자동 백업이 없으므로 이 작업을 켜 두
 
 ## 알아 둘 것
 
-- **지역:** DB는 싱가포르에 있다. Render 서버가 다른 지역(기본 Oregon)에 있으면 쿼리마다 왕복 지연이 생긴다.
-  Render 서비스 지역을 Singapore로 맞추는 것을 권한다.
+- **지역:** DB는 서울에 있다. Render 서버도 가까운 지역(Singapore)에 두면 쿼리 왕복 지연이 줄어든다
+  (Render에는 서울 지역이 없다). 처음 만든 싱가포르 프로젝트 `kingsamuel8's Project`(`zmujcnbqoxursadvkopq`)는
+  빈 스키마만 있던 상태로 일시정지했다. 쓰지 않으므로 삭제해도 된다.
 - **무료 플랜 일시정지:** Supabase 무료 프로젝트는 7일간 활동이 없으면 일시정지된다. 서버가 계속 쿼리하면 문제없지만,
   출시 후에는 Pro 플랜을 권한다.
 - **스키마 변경:** 지금처럼 `server/migrations/`에 새 파일을 추가한다. 서버 시작 시 자동 적용된다.
