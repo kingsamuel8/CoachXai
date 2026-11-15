@@ -33,11 +33,15 @@ const pool = new Pool({
  * would otherwise be one publishable key away from anyone.
  *
  * Runs on every boot after migrations, so tables added by future migrations
- * are covered too. Idempotent. A no-op on a plain Postgres without those
- * roles (local development, tests).
+ * are covered too: RLS is switched on for every table in `public`, and new
+ * tables/sequences/functions get no grants for `anon`/`authenticated` by
+ * default. What the Supabase app may touch is opened explicitly, table by
+ * table with RLS policies, in migration 0014 (coach's own coaches / clients /
+ * lessons rows, share_lesson(), get_public_lesson_note()). Idempotent. A
+ * no-op on a plain Postgres without those roles (local development, tests).
  *
- * The server's own role owns the tables, so row level security without
- * policies does not affect it.
+ * The server's own role owns the tables, so row level security does not
+ * affect it.
  */
 export async function lockDownSupabaseDataApi(): Promise<void> {
   const { rows } = await pool.query<{ rolname: string }>(
@@ -60,9 +64,27 @@ export async function lockDownSupabaseDataApi(): Promise<void> {
       END LOOP;
     END $$;
   `);
-  await pool.query(`REVOKE ALL ON ALL TABLES IN SCHEMA public FROM ${roles}`);
+  // Tables with no RLS policy are not meant for the Data API at all: take
+  // back every grant (Supabase hands out ALL on new public tables by default).
+  // Tables that do have policies — the coach's coaches / clients / lessons
+  // rows (migration 0014) — keep the column-level grants their migration set.
+  await pool.query(`
+    DO $$
+    DECLARE t record;
+    BEGIN
+      FOR t IN
+        SELECT c.relname
+          FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
+           AND NOT EXISTS (
+             SELECT 1 FROM pg_policies p
+              WHERE p.schemaname = 'public' AND p.tablename = c.relname)
+      LOOP
+        EXECUTE format('REVOKE ALL ON public.%I FROM ${roles}', t.relname);
+      END LOOP;
+    END $$;
+  `);
   await pool.query(`REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM ${roles}`);
-  await pool.query(`REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM ${roles}`);
   await pool.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM ${roles}`);
   await pool.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM ${roles}`);
   await pool.query(`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM ${roles}`);
