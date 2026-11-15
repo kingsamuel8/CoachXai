@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 import { PublicLessonNote } from './components/simple/PublicLessonNote';
 import { TestModeApp } from './components/simple/TestModeApp';
+import { syncSupabaseModeFromUrl } from './utils/supabaseMode';
 import { readLessonNoteToken } from './utils/publicAppUrl';
 import { decodeNoteLink } from './utils/noteLink';
 import { syncTestModeFromUrl } from './utils/testMode';
@@ -25,9 +26,14 @@ const root = ReactDOM.createRoot(rootElement);
 //  - ?note=<토큰> — 서버에 저장된 노트(서버 모드)
 //  - #note=<내용> — 링크에 담긴 노트(테스트 모드, 서버 없이 열린다)
 // 테스트 모드(?test=1)는 서버 없이 녹음 → 정리 → 전달만 도는 화면이다.
+// Supabase 모드(?supabase=1)는 Express 대신 Supabase 로 같은 흐름을 돈다(이전 1단계).
 const noteToken = readLessonNoteToken(window.location.search);
 const inlineNote = decodeNoteLink(window.location.hash);
 const testMode = syncTestModeFromUrl(window.location.search);
+const supabaseMode = !testMode && syncSupabaseModeFromUrl(window.location.search);
+const SupabaseCoachApp = React.lazy(() =>
+  import('./components/simple/SupabaseCoachApp').then((m) => ({ default: m.SupabaseCoachApp }))
+);
 root.render(
   <React.StrictMode>
     {inlineNote ? (
@@ -36,6 +42,10 @@ root.render(
       <PublicLessonNote token={noteToken} />
     ) : testMode ? (
       <TestModeApp />
+    ) : supabaseMode ? (
+      <React.Suspense fallback={null}>
+        <SupabaseCoachApp />
+      </React.Suspense>
     ) : (
       <App />
     )}

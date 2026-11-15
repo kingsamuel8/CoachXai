@@ -84,7 +84,7 @@ const FALLBACK_DEFAULT_MODEL = 'gemini-2.5-flash';
  *      빡빡하다 — routes/ai.ts 가 404/429 시 기본 모델로 1회 폴백해
  *      유료 레슨 도중 요약이 통째로 죽는 일을 막는다.
  */
-const FEATURE_MODEL_OVERRIDES: Record<string, string> = {
+export const FEATURE_MODEL_OVERRIDES: Record<string, string> = {
   // OCR / structured extraction — deterministic, benefits from cheap+fast.
   extract_golf_data: 'gemini-2.5-flash-lite',
   analyze_trackman_screen: 'gemini-2.5-flash-lite',

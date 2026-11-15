@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { apiService, type PublicLessonNote as PublicNote } from '../../services/apiService';
 import { NOTE_LABELS, isNoteLanguage, type NoteLanguage } from '../../services/lessonClientNote';
+import { isSupabaseNoteToken } from '../../utils/supabaseMode';
 
 /**
  * 코치가 보낸 링크로 고객이 여는 레슨 노트. 로그인·앱 설치 없이 열린다.
@@ -33,8 +34,11 @@ export const PublicLessonNote: React.FC<{ token?: string; data?: PublicNote }> =
   useEffect(() => {
     if (inline || !token) return;
     let cancelled = false;
-    apiService
-      .getPublicLessonNote(token)
+    // Supabase 가 만든 토큰(64자 16진수)은 Supabase 에, 나머지는 Express 에 묻는다.
+    const load = isSupabaseNoteToken(token)
+      ? import('../../services/supabaseCoachStore').then((m) => m.getPublicNote(token))
+      : apiService.getPublicLessonNote(token);
+    load
       .then((data) => !cancelled && setState({ kind: 'ready', data }))
       .catch((err: { status?: number }) => {
         if (!cancelled) setState({ kind: err?.status === 404 ? 'missing' : 'error' });

@@ -19,6 +19,7 @@
  * 서버 실패에 대비해 마지막으로 받은 사전을 localStorage 에 둔다.
  */
 import { isTestMode } from '../utils/testMode';
+import { isSupabaseMode } from '../utils/supabaseMode';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('lessonVocabulary');
@@ -378,6 +379,17 @@ const writeCache = (vocab: LessonVocabulary): void => {
 export const loadLessonVocabulary = async (): Promise<LessonVocabulary> => {
   // 테스트 모드는 서버가 없다 — 이 기기에 둔 사전만 쓴다.
   if (isTestMode()) return readCache();
+  if (isSupabaseMode()) {
+    try {
+      const { loadMyVocabulary } = await import('./supabaseCoachStore');
+      const vocab = normalizeLessonVocabulary(await loadMyVocabulary());
+      writeCache(vocab);
+      return vocab;
+    } catch (err) {
+      log.warn('용어 사전을 불러오지 못해 캐시를 씁니다:', err);
+      return readCache();
+    }
+  }
   try {
     // API 계층은 여기서만 필요하다 — 정적 import 하면 필기 파이프라인이 이
     // 모듈의 순수 함수(프롬프트 블록)를 쓰는 것만으로 API 계층까지 끌려온다.
@@ -399,6 +411,12 @@ export const saveLessonVocabulary = async (
   if (isTestMode()) {
     writeCache(normalized);
     return normalized;
+  }
+  if (isSupabaseMode()) {
+    const { saveMyVocabulary } = await import('./supabaseCoachStore');
+    const saved = normalizeLessonVocabulary(await saveMyVocabulary(normalized));
+    writeCache(saved);
+    return saved;
   }
   const { apiService } = await import('./apiService');
   const saved = normalizeLessonVocabulary(await apiService.saveLessonVocabulary(normalized));

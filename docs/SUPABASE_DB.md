@@ -59,3 +59,25 @@ Supabase 무료 플랜에는 자동 백업이 없으므로 이 작업을 켜 두
 - **무료 플랜 일시정지:** Supabase 무료 프로젝트는 7일간 활동이 없으면 일시정지된다. 서버가 계속 쿼리하면 문제없지만,
   출시 후에는 Pro 플랜을 권한다.
 - **스키마 변경:** 지금처럼 `server/migrations/`에 새 파일을 추가한다. 서버 시작 시 자동 적용된다.
+
+## Supabase 모드 (이전 1단계 — Express 없이 녹음 → 정리 → 전달)
+
+웹 앱 주소에 `?supabase=1`을 붙이면(기기에 기억, `?supabase=0`으로 끔) 단순 코치 화면이 Express 대신
+Supabase로 돈다. 빌드 환경 변수 `VITE_BACKEND=supabase`면 항상 켜진다.
+
+| 기능 | Express 모드 | Supabase 모드 |
+|---|---|---|
+| 코치 로그인 | `/api/auth/login/coach` (자체 JWT) | Supabase Auth (이메일·비밀번호). 가입 시 `user_metadata.role='coach'` → 트리거가 `coaches` 행 생성 |
+| 고객·레슨 읽기/저장 | `/api/clients`, `/api/lessons` | 표 직접 접근, RLS로 자기 것만 (마이그레이션 0014) |
+| 용어 사전 | `/api/coaches/me/lesson-vocabulary` | `coaches.lesson_vocabulary` 직접 |
+| 공유 링크 | `POST /api/lessons/:id/share` (22자 토큰) | `share_lesson()` (64자 토큰) |
+| 링크로 노트 열기 | `GET /api/public/lesson-notes/:token` | `get_public_lesson_note()` — 토큰 모양으로 자동 선택 |
+| AI | `POST /api/ai/invoke` | Edge Function `ai-invoke` (`supabase/functions/ai-invoke`) |
+
+- AI 모델·온도는 `supabase/functions/_shared/aiRouting.ts`와 Express(`modelRouter.ts`, `aiTemperature.ts`)가 같아야 한다.
+  `__tests__/aiRoutingParity.test.ts`가 확인한다.
+- Edge Function 비밀값: `GEMINI_API_KEY`(필수), `GEMINI_MODEL`·`AI_RATE_LIMIT_PER_MIN`(선택). Supabase 대시보드 →
+  Edge Functions → Secrets.
+- 스트리밍(코치 AI 채팅)은 아직 없다. Supabase 모드에서는 비스트리밍 호출로 넘어간다.
+- 웹 앱의 Supabase 주소·publishable 키는 `utils/supabaseMode.ts`에 기본값이 있고 `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_PUBLISHABLE_KEY`로 바꿀 수 있다(공개 값).

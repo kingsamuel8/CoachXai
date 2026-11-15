@@ -24,6 +24,7 @@
 import { createLogger } from '../utils/logger';
 import { recordAiCall, hashPrompt } from './aiCallLogger';
 import { jsonAuthHeaders, resolveApiBaseUrl } from './apiBase';
+import { isSupabaseMode } from '../utils/supabaseMode';
 import { scanForInjection } from './promptSafety';
 
 const log = createLogger('aiStream');
@@ -171,6 +172,10 @@ export const invokeBackendAIStream = async (
     void firstChunkAt; // reserved for future first-token latency logging
     void hashPrompt;   // reserved for future cache-write
   };
+
+  // Supabase 모드의 Edge Function 은 아직 스트리밍이 없다 — 호출하는 쪽이
+  // 비스트리밍 경로(invokeBackendAI)로 넘어가도록 501 과 같은 신호를 준다.
+  if (isSupabaseMode()) throw new StreamNotSupportedError('Streaming is not available in Supabase mode');
 
   let response: Response;
   try {

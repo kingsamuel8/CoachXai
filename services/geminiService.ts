@@ -46,7 +46,7 @@ import {
   buildMemberActivityOverview,
   formatLessonEntry,
 } from './lessonContext';
-import { jsonAuthHeaders, resolveApiBaseUrl } from './apiBase';
+import { resolveAiTarget } from './aiTarget';
 import { recordAiCall, hashPrompt } from './aiCallLogger';
 import {
   CACHEABLE_FEATURES,
@@ -60,16 +60,6 @@ import { buildPhysicsReferenceBlock } from './physicsGrounding';
 import { buildFewShotBlock, coachStyleService } from './coachStyleService';
 
 const log = createLogger('gemini');
-
-const API_BASE = resolveApiBaseUrl();
-
-const getAiApiEndpoint = (): string => {
-  if (API_BASE) return `${API_BASE}/api/ai/invoke`;
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin}/api/ai/invoke`;
-  }
-  return '/api/ai/invoke';
-};
 
 interface InlineDataPart {
   inlineData: {
@@ -299,9 +289,11 @@ export const invokeBackendAI = async <T>(feature: string, payload: unknown): Pro
   }
 
   try {
-    const response = await fetch(getAiApiEndpoint(), {
+    // Express 게이트웨이 또는 (Supabase 모드) Edge Function — services/aiTarget.ts
+    const target = await resolveAiTarget();
+    const response = await fetch(target.url, {
       method: 'POST',
-      headers: jsonAuthHeaders(),
+      headers: target.headers,
       body: JSON.stringify({ feature, payload }),
     });
 
