@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
     // Swap this to your actual production domain if you use a custom domain.
     // ?variant=student tells the shared web deploy this shell is the student
     // app, so utils/appVariant.ts locks the login/UI to student-only.
-    url: 'https://www.coachx.kr/?variant=student',
+    url: 'https://coach-xai-lake.vercel.app/?variant=student',
     androidScheme: 'https',
   },
   plugins: {
