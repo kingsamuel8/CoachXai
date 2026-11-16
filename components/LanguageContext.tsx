@@ -3376,8 +3376,28 @@ interface LanguageContextType {
 
 export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const LANGUAGE_STORAGE_KEY = 'coachxai_language';
+
+const readStoredLanguage = (): Language => {
+  try {
+    const v = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return v === 'ko' || v === 'en' || v === 'ja' || v === 'th' ? v : 'ko';
+  } catch {
+    return 'ko';
+  }
+};
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('ko');
+  // 고른 언어는 기기에 남긴다 — 해외 코치가 앱을 열 때마다 한국어로 돌아가지 않게.
+  const [language, setLanguageState] = useState<Language>(readStoredLanguage);
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    } catch {
+      // 저장 공간이 막혀 있어도 이번 실행 동안은 바뀐 언어로 돈다.
+    }
+  };
 
   const t = (key: string) => {
     return translations[language][key] || key;

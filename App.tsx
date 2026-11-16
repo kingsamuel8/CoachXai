@@ -18,6 +18,7 @@ import { LessonCard } from './components/LessonCard';
 import { LessonDetail } from './components/LessonDetail';
 import { NewLessonForm } from './components/NewLessonForm';
 import { LiveLessonCompanion } from './components/LiveLessonCompanion';
+import { SimpleCoachApp } from './components/simple/SimpleCoachApp';
 import { LiveLessonStudentPicker } from './components/LiveLessonStudentPicker';
 import { ClientApp } from './components/ClientApp';
 import { LessonUploadPage } from './components/LessonUploadPage';
@@ -351,6 +352,12 @@ const AppContent: React.FC = () => {
    *    long-removed upward sync minted once per app launch), and a picker
    *    that shows the same 이름·번호 a hundred times is unusable.
    */
+  const [coachUiMode, setCoachUiModeState] = useState<CoachUiMode>(readCoachUiMode);
+  const setCoachUiMode = (mode: CoachUiMode) => {
+    setCoachUiModeState(mode);
+    writeCoachUiMode(mode);
+  };
+
   const coachOwnClients = useMemo(() => {
     const coachId = currentUser && 'id' in currentUser ? currentUser.id : undefined;
     if (!coachId) return [];
@@ -1879,6 +1886,9 @@ const AppContent: React.FC = () => {
       case 'LANGUAGE':
         toggleLanguage();
         break;
+      case 'SIMPLE_MODE':
+        setCoachUiMode('simple');
+        break;
       case 'LOGOUT':
         handleLogout();
         break;
@@ -2211,6 +2221,24 @@ const AppContent: React.FC = () => {
   }
 
   // --- COACH VIEW ---
+
+  // 기본은 녹음 → 정리 → 전달 세 단계만 있는 단순 화면이다. 예전 전체 기능은
+  // 단순 화면 설정의 "전체 기능 화면으로"로 열고, 그 선택은 기기에 남는다.
+  if (coachUiMode === 'simple' && currentUser && 'id' in currentUser) {
+    const coachId = currentUser.id;
+    return (
+      <SimpleCoachApp
+        coach={{ id: coachId, name: currentUser.name }}
+        students={coachOwnClients}
+        lessons={lessons.filter((l) => l.coachId === coachId)}
+        onLessonSaved={(saved) =>
+          setLessons((prev) => [saved, ...prev.filter((l) => l.id !== saved.id)])
+        }
+        onOpenFullApp={() => setCoachUiMode('full')}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-base text-ink-high flex flex-col font-sans">
@@ -2952,6 +2980,26 @@ const AppContent: React.FC = () => {
     </div>
   );
 };
+
+type CoachUiMode = 'simple' | 'full';
+const COACH_UI_MODE_KEY = 'coachxai_coach_ui_mode';
+
+/** 코치 화면 모드 — 기본은 단순 화면. 전체 기능을 고른 기기만 'full' 로 남는다. */
+function readCoachUiMode(): CoachUiMode {
+  try {
+    return localStorage.getItem(COACH_UI_MODE_KEY) === 'full' ? 'full' : 'simple';
+  } catch {
+    return 'simple';
+  }
+}
+
+function writeCoachUiMode(mode: CoachUiMode): void {
+  try {
+    localStorage.setItem(COACH_UI_MODE_KEY, mode);
+  } catch {
+    // 저장이 막혀도 이번 실행 동안은 고른 화면으로 돈다.
+  }
+}
 
 const App: React.FC = () => {
   return (

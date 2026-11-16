@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { randomBytes } from 'node:crypto';
 import pool from '../services/db';
 import { authMiddleware, AuthRole } from '../middleware/auth';
 import { signMediaUrl, reSignIfMedia } from '../services/mediaAccess';
@@ -674,6 +675,43 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/lessons/:id
+/**
+ * POST /api/lessons/:id/share — 고객에게 보낼 레슨 노트 링크의 토큰을 만든다.
+ *
+ * 레슨을 만든 코치만 부를 수 있다. 같은 레슨에 다시 부르면 기존 토큰을
+ * 돌려준다(이미 보낸 링크가 계속 열려야 한다). 토큰은 128비트 난수라
+ * 추측할 수 없고, 링크로 읽히는 것은 고객용 노트뿐이다(routes/publicNotes.ts).
+ */
+router.post('/:id/share', async (req: Request, res: Response) => {
+  try {
+    if (req.user!.role !== 'coach') {
+      res.status(403).json({ error: 'Only the coach can share a lesson note' });
+      return;
+    }
+    const existing = await loadOwnedLesson(req.params.id, req.user!.id, 'coach');
+    if (!existing) {
+      res.status(404).json({ error: 'Lesson not found or access denied' });
+      return;
+    }
+    let token = existing.share_token as string | null;
+    if (!token) {
+      token = randomBytes(16).toString('base64url');
+      await pool.query(
+        `UPDATE lessons SET share_token = $1, share_created_at = $2
+         WHERE id = $3 AND share_token IS NULL`,
+        [token, Date.now(), req.params.id]
+      );
+      // 동시에 두 번 눌렸으면 먼저 저장된 토큰을 쓴다.
+      const row = await pool.query('SELECT share_token FROM lessons WHERE id = $1', [req.params.id]);
+      token = (row.rows[0]?.share_token as string | null) ?? token;
+    }
+    res.json({ token });
+  } catch (err) {
+    console.error('[lessons] POST /:id/share error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
