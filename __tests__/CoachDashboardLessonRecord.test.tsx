@@ -123,6 +123,8 @@ const openHamburger = () =>
 
 describe('Coach app shell (post-redesign)', () => {
   beforeEach(() => {
+    // 이 테스트는 기존 전체 기능 화면을 본다(기본은 녹음·정리·전달 단순 화면).
+    localStorage.setItem('coachxai_coach_ui_mode', 'full');
     vi.clearAllMocks();
   });
 
@@ -258,4 +260,33 @@ describe('Coach app shell (post-redesign)', () => {
   // CTA. The direct-registration entry point still exists on the
   // LessonStartPromptModal; its coverage lives with that component's own
   // tests rather than here.
+});
+
+describe('Coach app shell — 기본 단순 화면', () => {
+  beforeEach(() => {
+    localStorage.removeItem('coachxai_coach_ui_mode');
+    vi.clearAllMocks();
+  });
+
+  it('코치는 기본으로 녹음·정리·전달 단순 화면에 들어온다', async () => {
+    render(<App />);
+    expect(await screen.findByRole('button', { name: /레슨 녹음 시작/ })).toBeInTheDocument();
+    // 예전 전체 화면의 메뉴는 보이지 않는다.
+    expect(screen.queryByRole('button', { name: /open menu/i })).toBeNull();
+  });
+
+  it('전체 기능 화면을 고르면 기기에 남고, 메뉴에서 단순 화면으로 돌아올 수 있다', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: '설정' }));
+    fireEvent.click(screen.getByRole('button', { name: '전체 기능 화면으로' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /open menu/i })).toBeInTheDocument();
+    });
+    expect(localStorage.getItem('coachxai_coach_ui_mode')).toBe('full');
+
+    openHamburger();
+    fireEvent.click(screen.getByRole('button', { name: /단순 화면/ }));
+    expect(await screen.findByRole('button', { name: /레슨 녹음 시작/ })).toBeInTheDocument();
+    expect(localStorage.getItem('coachxai_coach_ui_mode')).toBe('simple');
+  });
 });

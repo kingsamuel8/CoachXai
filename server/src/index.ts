@@ -20,6 +20,7 @@ import bayReservationsRouter from './routes/bayReservations';
 import aiAssetsRouter from './routes/aiAssets';
 import curriculumTemplatesRouter from './routes/curriculumTemplates';
 import pushRouter from './routes/push';
+import publicNotesRouter from './routes/publicNotes';
 import aiFeedbackRouter from './routes/aiFeedback';
 import consentsRouter from './routes/consents';
 import { startScheduledPushRunner } from './services/scheduledPushRunner';
@@ -80,6 +81,8 @@ app.use('/api/bay-reservations', bayReservationsRouter);
 app.use('/api/ai-assets', aiAssetsRouter);
 app.use('/api/curriculum-templates', curriculumTemplatesRouter);
 app.use('/api/push', pushRouter);
+// 로그인 없이 열리는 고객용 레슨 노트(코치가 보낸 링크).
+app.use('/api/public/lesson-notes', publicNotesRouter);
 app.use('/api/ai-feedback', aiFeedbackRouter);
 app.use('/api/consents', consentsRouter);
 

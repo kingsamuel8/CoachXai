@@ -223,6 +223,27 @@ export interface LiveLessonDetail {
   keyPoints?: string[];
   /** 레슨 중 언급된 드릴/과제 모음. */
   drills?: string[];
+  /**
+   * 고객에게 보내는 레슨 노트 — 코치가 확인한 뒤 공유 링크로 전달된다.
+   * 단순 화면(SimpleCoachApp)에서 저장한 기록에만 있다.
+   */
+  clientNote?: LessonClientNote;
+}
+
+/** 고객에게 보내는 레슨 노트. 고객이 읽는 언어로 쓰인다. */
+export interface LessonClientNote {
+  /** 노트 언어 — 'ko' | 'en' | 'ja' | 'th'. */
+  language: string;
+  /** 오늘 레슨을 한 문장으로. */
+  headline: string;
+  /** 오늘 배운 핵심(3~5개). */
+  keyPoints: string[];
+  /** 다음 레슨까지 할 연습 과제. */
+  drills: string[];
+  /** 다음 레슨에서 이어 갈 것. */
+  nextFocus: string;
+  /** 코치가 고객에게 남기는 한마디(선택). */
+  message: string;
 }
 
 /**

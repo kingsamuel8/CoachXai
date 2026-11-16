@@ -53,6 +53,7 @@ import {
   getCachedResponse,
   setCachedResponse,
 } from './aiResponseCache';
+import { isTestMode } from '../utils/testMode';
 import { invokeBackendAIStream, StreamNotSupportedError } from './aiStream';
 import { scanForInjection } from './promptSafety';
 import { buildPhysicsReferenceBlock } from './physicsGrounding';
@@ -253,6 +254,11 @@ const extractEvidenceMetrics = (
 };
 
 export const invokeBackendAI = async <T>(feature: string, payload: unknown): Promise<T> => {
+  // 테스트 모드(서버 없이 시험하는 모드)는 브라우저가 Gemini 를 직접 부른다.
+  if (isTestMode()) {
+    const { callGeminiDirect } = await import('./testGemini');
+    return (await callGeminiDirect(feature, payload)) as unknown as T;
+  }
   const startedAt = Date.now();
   const meta = inspectPayload(payload);
   const injection = buildInjectionSignal(meta.userMessage);
