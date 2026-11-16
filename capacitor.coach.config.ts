@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
     // Swap this to your actual production domain if you use a custom domain.
     // ?variant=coach tells the shared web deploy this shell is the coach
     // app, so utils/appVariant.ts locks the login/UI to coach-only.
-    url: 'https://coach-xai.vercel.app/?variant=coach',
+    url: 'https://www.coachx.kr/?variant=coach',
     androidScheme: 'https',
   },
   plugins: {

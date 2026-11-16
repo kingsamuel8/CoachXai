@@ -140,6 +140,6 @@ describe('공유 링크', () => {
 
   it('로컬 개발 주소에서는 고객이 열 수 있는 배포 주소로 만든다', () => {
     // jsdom 의 주소는 localhost 다.
-    expect(lessonNoteUrl('AbCdEfGhIjKlMnOpQrSt12').startsWith('https://coach-xai.vercel.app/')).toBe(true);
+    expect(lessonNoteUrl('AbCdEfGhIjKlMnOpQrSt12').startsWith('https://www.coachx.kr/')).toBe(true);
   });
 });

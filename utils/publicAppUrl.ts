@@ -6,7 +6,7 @@
  * (capacitor.*.config.ts 의 server.url), 로컬 개발·미리보기 주소는 고객이
  * 열 수 없으므로 배포 주소로 대신한다.
  */
-const DEPLOYED_WEB_APP = 'https://coach-xai.vercel.app';
+const DEPLOYED_WEB_APP = 'https://www.coachx.kr';
 
 export const publicAppBaseUrl = (): string => {
   const env = (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined)?.trim();
