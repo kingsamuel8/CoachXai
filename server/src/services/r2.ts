@@ -1,4 +1,10 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export const R2_BUCKET = process.env.R2_BUCKET ?? 'coachxai';
@@ -70,4 +76,34 @@ export async function generateDownloadUrl(key: string): Promise<string> {
   });
 
   return getSignedUrl(r2Client, command, { expiresIn: 3600 });
+}
+
+/** Upload bytes straight from the server (used for native recorder segments). */
+export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  await r2Client.send(
+    new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType })
+  );
+}
+
+/**
+ * Delete every object under a prefix. Returns how many objects were removed.
+ * Used by the recording retention runner to drop a lesson's raw audio.
+ */
+export async function deletePrefix(prefix: string): Promise<number> {
+  let removed = 0;
+  let token: string | undefined;
+  do {
+    const page = await r2Client.send(
+      new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: prefix, ContinuationToken: token })
+    );
+    const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
+    if (keys.length > 0) {
+      await r2Client.send(
+        new DeleteObjectsCommand({ Bucket: R2_BUCKET, Delete: { Objects: keys, Quiet: true } })
+      );
+      removed += keys.length;
+    }
+    token = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (token);
+  return removed;
 }

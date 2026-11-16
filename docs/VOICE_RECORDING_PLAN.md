@@ -1,6 +1,6 @@
 # 레슨 음성 녹음 시스템 v2 — 기획서
 
-> 상태: **확정 (v1.1)** · 대상: 코치 앱 "레슨 동반" 녹음 → 받아쓰기 → 요약
+> 상태: **확정 (v1.2) · 1단계 구현 중** — 진행 현황은 맨 아래 12장 · 대상: 코치 앱 "레슨 동반" 녹음 → 받아쓰기 → 요약
 > 대체 대상: `services/lessonAudioPipeline.ts`, `hooks/useLiveTranscription.ts`,
 > `components/LiveLessonCompanion.tsx`의 녹음/전사 부분
 
@@ -209,6 +209,9 @@ transcript_segments (
                     uploading   (남은 세그먼트 전송 — 앱 꺼도 OS가 계속)
                         │
                         ▼
+                    queued      (세그먼트가 모두 도착 — 처리 대기)
+                        │
+                        ▼
                     processing  (서버)
                         │
                 ┌───────┴───────┐
@@ -281,7 +284,7 @@ transcript_segments (
 | PRO 플러스 (신설) | **100시간** | 약 120개 |
 | PRO 맥스 (신설) | **500시간** | 약 600개 |
 
-가격은 미정 — 결정 필요(10장).
+한도 확정(2026-11-16). 플러스·맥스 월 가격은 미정.
 
 ### 한도 초과 시
 - 보관 한도를 넘는 [원본 보관]은 막고 "보관 공간이 가득 찼어요" + 상위 플랜 안내.
@@ -343,3 +346,35 @@ transcript_segments (
 1. **보관 한도와 플랜 가격** — 7장 제안(PRO 20h / 플러스 100h / 맥스 500h)으로 갈지, 각 플랜 월 가격
 2. **PoC용 레슨 녹음 5건** — 누가 언제 녹음할지 (학생 녹음 동의 필요)
 3. **받아쓰기 엔진 API 키** — 후보 업체 계정 생성 (무료 체험 범위로 PoC 가능)
+
+---
+
+## 12. 진행 현황
+
+### 1단계 — 완료(코드), 실기기 검증 대기
+
+| 영역 | 파일 | 상태 |
+|---|---|---|
+| DB | `server/migrations/1755400000012_lesson-recordings.js` | 완료 |
+| 정책(보관 3일·플랜 한도·업로드 토큰) | `server/src/services/recordingPolicy.ts` | 완료, 단위 테스트 16개 |
+| API | `server/src/routes/recordings.ts` | 완료, 실제 Postgres로 23개 시나리오 검증 |
+| 원본 정리 러너(매시간) | `server/src/services/recordingRetentionRunner.ts` | 완료 |
+| 앱 JS 연결 | `services/recording/*` | 완료, 단위 테스트 5개 |
+| Android 녹음기 | `plugins/lesson-recorder/android` | 작성 완료 — 빌드·실기기 검증 필요 |
+| iOS 녹음기 | `plugins/lesson-recorder/ios` | 작성 완료 — Xcode 빌드·실기기 검증 필요 |
+
+구현 메모
+- 세그먼트 경계 무손실: Android는 AudioRecord(PCM)→MediaCodec(AAC)→MediaMuxer, iOS는
+  AVAudioEngine→AVAudioConverter(16kHz)→AVAudioFile. 둘 다 입력은 끊지 않고 파일만 교체.
+- 업로드: Android WorkManager, iOS 백그라운드 URLSession. 서버는 재전송을 멱등 처리.
+- 녹음 서비스 선언(Android)과 백그라운드 오디오(iOS)는 **코치 앱에만** 넣었다.
+  학생 앱에는 플러그인 코드만 들어가고 `isAvailable()`이 false.
+- 앱이 강제 종료되면 쓰던 세그먼트 하나(최대 60초)는 복구 불가. 나머지는 다음 실행 때 이어서 올라간다.
+- Android는 통화 중 OS가 마이크에 무음을 넣으므로 공백 기록이 없다. iOS는 인터럽션을 공백으로 기록.
+
+### 남은 일
+- [ ] 실기기 시나리오 테스트: 화면 꺼짐 50분 / 전화 수신 / 와이파이 끊김 / 앱 강제 종료 / 재부팅
+- [ ] 레슨 동반 화면을 새 녹음기로 교체 (기능 플래그)
+- [ ] 2단계: 세그먼트 결합 → 받아쓰기 → 교정 → 요약 처리 잡 (엔진은 PoC 후 결정)
+- [ ] 3단계: 보관 화면·삭제 예정 표시·플랜 하향 시 30일 유예
+- [ ] 개인정보 동의 항목 추가

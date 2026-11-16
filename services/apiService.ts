@@ -1072,3 +1072,6 @@ export const apiService = {
     await req('DELETE', `/api/reservations/${reservationId}`);
   },
 };
+
+/** JSON API 호출 공용 함수 — 녹음 v2 등 apiService 객체 밖 모듈용. */
+export { req as apiRequest };
