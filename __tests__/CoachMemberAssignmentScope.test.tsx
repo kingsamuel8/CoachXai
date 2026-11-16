@@ -186,6 +186,8 @@ vi.mock('../services/apiService', async (importOriginal) => {
 
 describe('Coach member list stays scoped to students who designated this coach', () => {
   beforeEach(() => {
+    // 이 테스트는 기존 전체 기능 화면을 본다(기본은 녹음·정리·전달 단순 화면).
+    localStorage.setItem('coachxai_coach_ui_mode', 'full');
     vi.clearAllMocks();
     vi.mocked(storageService.getClients).mockReturnValue(cachedClients as any);
     vi.mocked(storageService.getCoachClients).mockReturnValue(cachedCoachClients as any);

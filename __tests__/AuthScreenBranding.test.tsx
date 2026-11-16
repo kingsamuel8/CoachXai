@@ -8,6 +8,8 @@ import { AUTH_USER_TYPE_STORAGE_KEY } from '../constants/auth';
 describe('AuthScreen branding copy', () => {
   beforeEach(() => {
     localStorage.removeItem(AUTH_USER_TYPE_STORAGE_KEY);
+    // 고른 언어는 기기에 남는다 — 앞 테스트가 바꾼 언어로 시작하지 않게 지운다.
+    localStorage.removeItem('coachxai_language');
   });
 
   it('shows the AI coach agent mission statement for coaches and students', () => {

@@ -271,11 +271,19 @@ router.post('/lesson-uploaded', async (req: Request, res: Response) => {
       res.status(403).json({ error: 'Lesson does not belong to this coach' });
       return;
     }
-    let studentId: string | null = l.client_id ?? null;
-    if (!studentId && l.client_phone) {
+    // lessons.client_id 는 회원 UUID 일 때도 있지만, 코치가 만든 레슨은 대개
+    // "이름_전화번호" 합성 키다. 합성 키를 회원 id 로 넘기면 받을 기기를
+    // 못 찾아 알림이 조용히 사라진다 — UUID 가 아니면 전화번호로 회원을 찾는다.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let studentId: string | null =
+      typeof l.client_id === 'string' && UUID_RE.test(l.client_id) ? l.client_id : null;
+    const phoneDigits = String(l.client_phone ?? '').replace(/[^0-9]/g, '');
+    if (!studentId && phoneDigits) {
       const c = await pool.query(
-        `SELECT id FROM clients WHERE phone = $1 LIMIT 1`,
-        [l.client_phone]
+        `SELECT id FROM clients
+          WHERE regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = $1
+          LIMIT 1`,
+        [phoneDigits]
       );
       if (c.rows.length > 0) studentId = c.rows[0].id;
     }

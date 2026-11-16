@@ -85,6 +85,8 @@ const DEFAULT_TEMPERATURE_BY_FEATURE: Record<string, number> = {
   // 코치 요약 + 학생 요약 — 근거가 화자별 발화로 갈려 있어 롤링 요약과
   // 같은 수준으로 필기에 충실해야 한다.
   lesson_dual_summary: 0.3,
+  // 고객용 레슨 노트 — 필기에 충실하되 고객이 읽기 쉬운 문장이어야 한다.
+  lesson_client_note: 0.3,
   compare_swings: 0.4,
   weekly_insight: 0.5,
   coachx_insights: 0.6,

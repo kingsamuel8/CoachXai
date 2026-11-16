@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import {
   X, User, Users, Dumbbell, BookOpen, Film, PenSquare,
   Target, ClipboardList, Globe, LogOut, ChevronRight, FileText, CalendarDays,
-  LayoutDashboard, Volume2, VolumeX,
+  LayoutDashboard, Volume2, VolumeX, Mic,
 } from 'lucide-react';
 import { CoachProfile } from '../types';
 import { useLanguage } from './LanguageContext';
@@ -21,6 +21,7 @@ export type CoachHamburgerAction =
   | 'BAY_RESERVATION'
   | 'MY_BAY_RESERVATIONS'
   | 'LANGUAGE'
+  | 'SIMPLE_MODE'
   | 'LOGOUT';
 
 interface CoachHamburgerMenuProps {
@@ -50,6 +51,7 @@ const labels = {
     bayReservation: '타석 예약',
     myBay: '내 타석 예약',
     language: '언어',
+    simpleMode: '녹음·정리·전달 단순 화면',
     logout: '로그아웃',
     lessons: '레슨',
     more: '더 보기',
@@ -69,6 +71,7 @@ const labels = {
     bayReservation: 'Book a bay',
     myBay: 'My bay reservations',
     language: 'Language',
+    simpleMode: 'Simple mode (record · organize · send)',
     logout: 'Log out',
     lessons: 'Lessons',
     more: 'More',
@@ -88,6 +91,7 @@ const labels = {
     bayReservation: '打席予約',
     myBay: '打席予約履歴',
     language: '言語',
+    simpleMode: 'シンプル画面（録音・整理・送信）',
     logout: 'ログアウト',
     lessons: 'レッスン',
     more: 'その他',
@@ -105,8 +109,8 @@ export const CoachHamburgerMenu: React.FC<CoachHamburgerMenuProps> = ({
   onToggleTts,
 }) => {
   const { language } = useLanguage();
-  const lang = (language as 'ko' | 'en' | 'ja') ?? 'ko';
-  const L = labels[lang];
+  // 태국어 라벨은 아직 없다 — 없는 언어는 영어로(전에는 undefined 로 화면이 깨졌다).
+  const L = labels[language as keyof typeof labels] ?? labels.en;
 
   useEffect(() => {
     if (!open) return;
@@ -212,6 +216,7 @@ export const CoachHamburgerMenu: React.FC<CoachHamburgerMenuProps> = ({
             )}
             <Row icon={User} label={L.profile} onClick={() => handle('PROFILE')} />
             <Row icon={Globe} label={L.language} onClick={() => handle('LANGUAGE')} />
+            <Row icon={Mic} label={L.simpleMode} onClick={() => handle('SIMPLE_MODE')} />
           </Section>
         </nav>
 
