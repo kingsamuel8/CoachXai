@@ -68,3 +68,6 @@ server/dist/
 
 # Payment order data (local dev only)
 server/data/payment_orders.json
+
+# Python
+__pycache__/
