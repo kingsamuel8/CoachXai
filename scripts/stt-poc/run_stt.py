@@ -168,13 +168,23 @@ def _dur_ms(v) -> float:
     return float(str(v or "0s").rstrip("s") or 0) * 1000
 
 
+CHIRP3_MAX_CHUNK_SEC = 18 * 60  # BatchRecognize 는 파일당 20분까지 — 여유를 둔다
+
+
 def google_chirp3_engine(diarize: bool, use_phrases: bool):
     """
     Google Speech-to-Text v2 BatchRecognize(chirp_3, location us).
     필요 환경 변수: GOOGLE_STT_KEY_FILE(서비스 계정 JSON 경로), GOOGLE_STT_BUCKET.
-    파일을 버킷에 올리고, 결과는 inline 으로 받은 뒤 올린 파일을 지운다.
+
+    제약(2026-11-19 확인)
+      - 버킷의 m4a(AAC)는 code 13 으로 실패 → FLAC 로 바꿔 올린다.
+      - 파일당 20분까지 → 18분 조각으로 잘라 한 요청에 같이 보내고 시간을 이어 붙인다.
+        화자 번호는 조각마다 따로 매겨지므로 "조각번호:화자" 로 구분한다
+        (조각을 넘어 같은 사람인지는 알 수 없다 — 이 엔진의 실사용상 약점).
+      - inline phrase set(용어 힌트)을 넣으면 code 13 → use_phrases=False 로 쓴다.
     """
     import os
+    import tempfile
 
     def run(audio: pathlib.Path, terms: list[str]) -> dict:
         key_file = os.environ["GOOGLE_STT_KEY_FILE"]
@@ -183,22 +193,26 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
         token = subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("gcp_token.py")), key_file],
                                capture_output=True, text=True, check=True).stdout.strip()
         auth = ["-H", f"Authorization: Bearer {token}"]
-        # BatchRecognize 는 m4a(AAC)를 버킷에서 읽으면 code 13 "internal error" 로 실패한다
-        # (같은 파일을 요청에 직접 실으면 된다). 올리기 전에 FLAC 로 바꾼다 — 실서비스의
-        # 서버 결합 단계도 같은 이유로 FLAC 를 만들어 넘긴다.
-        import tempfile
-        tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False)
-        tmp.close()
-        flac = pathlib.Path(tmp.name)
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(audio), "-ac", "1", "-ar", "16000",
-                        "-c:a", "flac", str(flac)], check=True)
-        obj = f"stt-poc/{int(time.time())}-{audio.stem}.flac"
+        dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                    "-of", "csv=p=0", str(audio)], capture_output=True, text=True,
+                                   check=True).stdout.strip())
+        n_chunks = max(1, int(-(-dur // CHIRP3_MAX_CHUNK_SEC)))
+        chunk_sec = dur / n_chunks
+        stamp = int(time.time())
+        uris: list[tuple[str, str, float]] = []  # (uri, object, offset_sec)
         try:
-            _curl_json([*auth, "-H", "Content-Type: audio/flac", "--data-binary", f"@{flac}",
-                        f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={obj}"])
-        finally:
-            flac.unlink(missing_ok=True)
-        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                for i in range(n_chunks):
+                    off = i * chunk_sec
+                    flac = pathlib.Path(tmp) / f"c{i}.flac"
+                    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{off:.3f}", "-t", f"{chunk_sec:.3f}",
+                                    "-i", str(audio), "-ac", "1", "-ar", "16000", "-c:a", "flac", str(flac)],
+                                   check=True)
+                    obj = f"stt-poc/{stamp}-{audio.stem}-c{i}.flac"
+                    _curl_json([*auth, "-H", "Content-Type: audio/flac", "--data-binary", f"@{flac}",
+                                f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={obj}"])
+                    uris.append((f"gs://{bucket}/{obj}", obj, off))
+
             features: dict = {"enableWordTimeOffsets": True, "enableAutomaticPunctuation": True}
             if diarize:
                 features["diarizationConfig"] = {"minSpeakerCount": 1, "maxSpeakerCount": 3}
@@ -207,45 +221,48 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
             if use_phrases:
                 config["adaptation"] = {"phraseSets": [{"inlinePhraseSet": {
                     "phrases": [{"value": t, "boost": 10} for t in terms]}}]}
-            uri = f"gs://{bucket}/{obj}"
-            body = json.dumps({"config": config, "files": [{"uri": uri}],
+            body = json.dumps({"config": config, "files": [{"uri": u} for u, _, _ in uris],
                                "recognitionOutputConfig": {"inlineResponseConfig": {}}})
             base = "https://us-speech.googleapis.com/v2"
             op = _curl_json([*auth, "-H", "Content-Type: application/json", "--data-binary", body,
                              f"{base}/projects/{project}/locations/us/recognizers/_:batchRecognize"])
-            for _ in range(240):  # 최대 20분
+            for _ in range(360):  # 최대 30분
                 if op.get("done"):
                     break
                 time.sleep(5)
                 op = _curl_json([*auth, f"{base}/{op['name']}"])
             if "error" in op:
                 raise RuntimeError(json.dumps(op["error"], ensure_ascii=False)[:400])
-            file_res = op["response"]["results"][uri]
-            if "error" in file_res:
-                raise RuntimeError(json.dumps(file_res["error"], ensure_ascii=False)[:400])
-            results = file_res.get("inlineResult", {}).get("transcript", {}).get("results", [])
+            per_chunk = []
+            for u, _, off in uris:
+                file_res = op["response"]["results"][u]
+                if "error" in file_res:
+                    raise RuntimeError(json.dumps(file_res["error"], ensure_ascii=False)[:400])
+                per_chunk.append((off, file_res.get("inlineResult", {}).get("transcript", {}).get("results", [])))
         finally:
-            subprocess.run(["curl", "-sS", "-o", "/dev/null", "-X", "DELETE", *auth,
-                            f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{obj.replace('/', '%2F')}"])
+            for _, obj, _ in uris:
+                subprocess.run(["curl", "-sS", "-o", "/dev/null", "-X", "DELETE", *auth,
+                                f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{obj.replace('/', '%2F')}"])
 
         texts, segs = [], []
-        for r in results:
-            alt = (r.get("alternatives") or [{}])[0]
-            if alt.get("transcript"):
-                texts.append(alt["transcript"])
-            # 단어 단위 화자 라벨을 같은 화자끼리 이어 구간으로 만든다.
-            for w in alt.get("words", []):
-                start, end = _dur_ms(w.get("startOffset")), _dur_ms(w.get("endOffset"))
-                spk = w.get("speakerLabel")
-                if segs and segs[-1]["speaker"] == spk and start - segs[-1]["endMs"] < 1500:
-                    segs[-1]["endMs"] = end
-                    segs[-1]["text"] += " " + w.get("word", "")
-                else:
-                    segs.append({"startMs": start, "endMs": end, "speaker": spk, "text": w.get("word", "")})
-        if not diarize:
-            for s in segs:
-                s["speaker"] = None
-        return {"text": " ".join(texts), "segments": segs}
+        for ci, (off, results) in enumerate(per_chunk):
+            off_ms = off * 1000
+            for r in results:
+                alt = (r.get("alternatives") or [{}])[0]
+                if alt.get("transcript"):
+                    texts.append(alt["transcript"])
+                # 단어 단위 화자 라벨을 같은 화자끼리 이어 구간으로 만든다.
+                for w in alt.get("words", []):
+                    start = off_ms + _dur_ms(w.get("startOffset"))
+                    end = off_ms + _dur_ms(w.get("endOffset"))
+                    lab = w.get("speakerLabel")
+                    spk = (f"{ci}:{lab}" if n_chunks > 1 else lab) if (diarize and lab) else None
+                    if segs and segs[-1]["speaker"] == spk and start - segs[-1]["endMs"] < 1500:
+                        segs[-1]["endMs"] = end
+                        segs[-1]["text"] += " " + w.get("word", "")
+                    else:
+                        segs.append({"startMs": start, "endMs": end, "speaker": spk, "text": w.get("word", "")})
+        return {"text": " ".join(texts), "segments": segs, "chunks": n_chunks}
 
     return run
 
