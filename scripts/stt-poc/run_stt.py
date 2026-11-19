@@ -168,6 +168,39 @@ def _dur_ms(v) -> float:
     return float(str(v or "0s").rstrip("s") or 0) * 1000
 
 
+def elevenlabs_engine(model: str, use_keyterms: bool, num_speakers: int | None = None):
+    """ElevenLabs Speech-to-Text (Scribe). 키는 xi-api-key 헤더로 프록시가 넣는다."""
+
+    def run(audio: pathlib.Path, terms: list[str]) -> dict:
+        args = ["-H", "xi-api-key: proxy-injected",
+                "-F", f"file=@{audio}",
+                "--form-string", f"model_id={model}",
+                "--form-string", "language_code=kor",
+                "--form-string", "diarize=true",
+                "--form-string", "tag_audio_events=false",
+                "--form-string", "timestamps_granularity=word"]
+        if num_speakers:
+            args += ["--form-string", f"num_speakers={num_speakers}"]
+        if use_keyterms:
+            for t in terms[:100]:
+                args += ["--form-string", f"keyterms={t}"]
+        d = _curl_json(args + ["https://api.elevenlabs.io/v1/speech-to-text"])
+        segs: list[dict] = []
+        for w in d.get("words", []):
+            if w.get("type") != "word":
+                continue
+            start, end = float(w.get("start", 0)) * 1000, float(w.get("end", 0)) * 1000
+            spk = w.get("speaker_id")
+            if segs and segs[-1]["speaker"] == spk and 0 <= start - segs[-1]["endMs"] < 1500:
+                segs[-1]["endMs"] = end
+                segs[-1]["text"] += " " + w.get("text", "")
+            else:
+                segs.append({"startMs": start, "endMs": end, "speaker": spk, "text": w.get("text", "")})
+        return {"text": d.get("text", ""), "segments": segs}
+
+    return run
+
+
 CHIRP3_MAX_CHUNK_SEC = 18 * 60  # BatchRecognize 는 파일당 20분까지 — 여유를 둔다
 
 
@@ -289,6 +322,8 @@ ENGINES = {
     # chirp_3 BatchRecognize 는 inline phrase set(용어 힌트)을 넣으면 code 13 으로 실패한다
     # (2026-11-19 확인). 용어 힌트 없이 비교한다.
     "google:chirp_3": google_chirp3_engine(diarize=True, use_phrases=False),
+    "elevenlabs:scribe_v2": elevenlabs_engine("scribe_v2", use_keyterms=True),
+    "elevenlabs:scribe_v2-2spk": elevenlabs_engine("scribe_v2", use_keyterms=True, num_speakers=2),
     "openai:gpt-transcribe": openai_engine("gpt-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe": openai_engine("gpt-4o-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe-diarize": openai_engine("gpt-4o-transcribe-diarize", use_prompt=False),
