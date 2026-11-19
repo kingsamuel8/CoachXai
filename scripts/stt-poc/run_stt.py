@@ -163,7 +163,83 @@ def openai_engine(model: str, use_prompt: bool):
     return run
 
 
+def _dur_ms(v) -> float:
+    # Speech v2 Duration 은 "12.340s" 문자열로 온다.
+    return float(str(v or "0s").rstrip("s") or 0) * 1000
+
+
+def google_chirp3_engine(diarize: bool, use_phrases: bool):
+    """
+    Google Speech-to-Text v2 BatchRecognize(chirp_3, location us).
+    필요 환경 변수: GOOGLE_STT_KEY_FILE(서비스 계정 JSON 경로), GOOGLE_STT_BUCKET.
+    파일을 버킷에 올리고, 결과는 inline 으로 받은 뒤 올린 파일을 지운다.
+    """
+    import os
+
+    def run(audio: pathlib.Path, terms: list[str]) -> dict:
+        key_file = os.environ["GOOGLE_STT_KEY_FILE"]
+        bucket = os.environ["GOOGLE_STT_BUCKET"]
+        project = json.load(open(key_file))["project_id"]
+        token = subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("gcp_token.py")), key_file],
+                               capture_output=True, text=True, check=True).stdout.strip()
+        auth = ["-H", f"Authorization: Bearer {token}"]
+        obj = f"stt-poc/{int(time.time())}-{audio.name}"
+        _curl_json([*auth, "-H", "Content-Type: audio/mp4", "--data-binary", f"@{audio}",
+                    f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={obj}"])
+        try:
+            features: dict = {"enableWordTimeOffsets": True, "enableAutomaticPunctuation": True}
+            if diarize:
+                features["diarizationConfig"] = {"minSpeakerCount": 1, "maxSpeakerCount": 3}
+            config: dict = {"autoDecodingConfig": {}, "languageCodes": ["ko-KR"], "model": "chirp_3",
+                            "features": features}
+            if use_phrases:
+                config["adaptation"] = {"phraseSets": [{"inlinePhraseSet": {
+                    "phrases": [{"value": t, "boost": 10} for t in terms]}}]}
+            uri = f"gs://{bucket}/{obj}"
+            body = json.dumps({"config": config, "files": [{"uri": uri}],
+                               "recognitionOutputConfig": {"inlineResponseConfig": {}}})
+            base = "https://us-speech.googleapis.com/v2"
+            op = _curl_json([*auth, "-H", "Content-Type: application/json", "--data-binary", body,
+                             f"{base}/projects/{project}/locations/us/recognizers/_:batchRecognize"])
+            for _ in range(240):  # 최대 20분
+                if op.get("done"):
+                    break
+                time.sleep(5)
+                op = _curl_json([*auth, f"{base}/{op['name']}"])
+            if "error" in op:
+                raise RuntimeError(json.dumps(op["error"], ensure_ascii=False)[:400])
+            file_res = op["response"]["results"][uri]
+            if "error" in file_res:
+                raise RuntimeError(json.dumps(file_res["error"], ensure_ascii=False)[:400])
+            results = file_res.get("inlineResult", {}).get("transcript", {}).get("results", [])
+        finally:
+            subprocess.run(["curl", "-sS", "-o", "/dev/null", "-X", "DELETE", *auth,
+                            f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{obj.replace('/', '%2F')}"])
+
+        texts, segs = [], []
+        for r in results:
+            alt = (r.get("alternatives") or [{}])[0]
+            if alt.get("transcript"):
+                texts.append(alt["transcript"])
+            # 단어 단위 화자 라벨을 같은 화자끼리 이어 구간으로 만든다.
+            for w in alt.get("words", []):
+                start, end = _dur_ms(w.get("startOffset")), _dur_ms(w.get("endOffset"))
+                spk = w.get("speakerLabel")
+                if segs and segs[-1]["speaker"] == spk and start - segs[-1]["endMs"] < 1500:
+                    segs[-1]["endMs"] = end
+                    segs[-1]["text"] += " " + w.get("word", "")
+                else:
+                    segs.append({"startMs": start, "endMs": end, "speaker": spk, "text": w.get("word", "")})
+        if not diarize:
+            for s in segs:
+                s["speaker"] = None
+        return {"text": " ".join(texts), "segments": segs}
+
+    return run
+
+
 ENGINES = {
+    "google:chirp_3": google_chirp3_engine(diarize=True, use_phrases=True),
     "openai:gpt-transcribe": openai_engine("gpt-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe": openai_engine("gpt-4o-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe-diarize": openai_engine("gpt-4o-transcribe-diarize", use_prompt=False),
