@@ -183,9 +183,21 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
         token = subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("gcp_token.py")), key_file],
                                capture_output=True, text=True, check=True).stdout.strip()
         auth = ["-H", f"Authorization: Bearer {token}"]
-        obj = f"stt-poc/{int(time.time())}-{audio.name}"
-        _curl_json([*auth, "-H", "Content-Type: audio/mp4", "--data-binary", f"@{audio}",
-                    f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={obj}"])
+        # BatchRecognize 는 m4a(AAC)를 버킷에서 읽으면 code 13 "internal error" 로 실패한다
+        # (같은 파일을 요청에 직접 실으면 된다). 올리기 전에 FLAC 로 바꾼다 — 실서비스의
+        # 서버 결합 단계도 같은 이유로 FLAC 를 만들어 넘긴다.
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(suffix=".flac", delete=False)
+        tmp.close()
+        flac = pathlib.Path(tmp.name)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(audio), "-ac", "1", "-ar", "16000",
+                        "-c:a", "flac", str(flac)], check=True)
+        obj = f"stt-poc/{int(time.time())}-{audio.stem}.flac"
+        try:
+            _curl_json([*auth, "-H", "Content-Type: audio/flac", "--data-binary", f"@{flac}",
+                        f"https://storage.googleapis.com/upload/storage/v1/b/{bucket}/o?uploadType=media&name={obj}"])
+        finally:
+            flac.unlink(missing_ok=True)
         try:
             features: dict = {"enableWordTimeOffsets": True, "enableAutomaticPunctuation": True}
             if diarize:
@@ -239,7 +251,9 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
 
 
 ENGINES = {
-    "google:chirp_3": google_chirp3_engine(diarize=True, use_phrases=True),
+    # chirp_3 BatchRecognize 는 inline phrase set(용어 힌트)을 넣으면 code 13 으로 실패한다
+    # (2026-11-19 확인). 용어 힌트 없이 비교한다.
+    "google:chirp_3": google_chirp3_engine(diarize=True, use_phrases=False),
     "openai:gpt-transcribe": openai_engine("gpt-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe": openai_engine("gpt-4o-transcribe", use_prompt=True),
     "openai:gpt-4o-transcribe-diarize": openai_engine("gpt-4o-transcribe-diarize", use_prompt=False),
