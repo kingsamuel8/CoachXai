@@ -245,6 +245,10 @@ ENGINES = {
     "openai:gpt-4o-transcribe-diarize": openai_engine("gpt-4o-transcribe-diarize", use_prompt=False),
 }
 
+# 기본으로 돌리는 엔진. OpenAI 는 비교에서 제외하기로 했다(2026-11-19) — 어댑터는
+# 남겨 두되 --engines 로 이름을 직접 적어야만 돈다.
+DEFAULT_ENGINES = [name for name in ENGINES if not name.startswith("openai:")]
+
 # ─── 실행 ───────────────────────────────────────────────────────────────────
 
 
@@ -310,7 +314,8 @@ def report(rows: list[dict]) -> str:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("case", type=pathlib.Path)
-    p.add_argument("--engines", default=",".join(ENGINES))
+    p.add_argument("--engines", default=",".join(DEFAULT_ENGINES),
+                   help="쉼표로 구분. 기본값은 DEFAULT_ENGINES — OpenAI 는 명시해야만 돈다.")
     a = p.parse_args()
     rows = []
     for name in a.engines.split(","):
