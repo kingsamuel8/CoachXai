@@ -249,25 +249,38 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
                 subprocess.run(["curl", "-sS", "-o", "/dev/null", "-X", "DELETE", *auth,
                                 f"https://storage.googleapis.com/storage/v1/b/{bucket}/o/{obj.replace('/', '%2F')}"])
 
-        texts, segs = [], []
+        # chirp_3 결과는 시간순이 아니고 일부 구간이 겹쳐 두 번 들어온다(65분 레슨에서 약 7%,
+        # 2026-11-19 확인). 단어를 절대 시각으로 모아 정렬하고, 같은 단어가 0.5초 안에
+        # 다시 나오면 중복으로 버린다. 받아쓰기 원문도 이 단어열로 다시 만든다.
+        words = []
         for ci, (off, results) in enumerate(per_chunk):
             off_ms = off * 1000
             for r in results:
                 alt = (r.get("alternatives") or [{}])[0]
-                if alt.get("transcript"):
-                    texts.append(alt["transcript"])
-                # 단어 단위 화자 라벨을 같은 화자끼리 이어 구간으로 만든다.
                 for w in alt.get("words", []):
-                    start = off_ms + _dur_ms(w.get("startOffset"))
-                    end = off_ms + _dur_ms(w.get("endOffset"))
                     lab = w.get("speakerLabel")
-                    spk = (f"{ci}:{lab}" if n_chunks > 1 else lab) if (diarize and lab) else None
-                    if segs and segs[-1]["speaker"] == spk and start - segs[-1]["endMs"] < 1500:
-                        segs[-1]["endMs"] = end
-                        segs[-1]["text"] += " " + w.get("word", "")
-                    else:
-                        segs.append({"startMs": start, "endMs": end, "speaker": spk, "text": w.get("word", "")})
-        return {"text": " ".join(texts), "segments": segs, "chunks": n_chunks}
+                    words.append({
+                        "startMs": off_ms + _dur_ms(w.get("startOffset")),
+                        "endMs": off_ms + _dur_ms(w.get("endOffset")),
+                        "speaker": (f"{ci}:{lab}" if n_chunks > 1 else lab) if (diarize and lab) else None,
+                        "word": w.get("word", ""),
+                    })
+        words.sort(key=lambda w: (w["startMs"], w["endMs"]))
+        deduped = []
+        for w in words:
+            if any(p["word"] == w["word"] and abs(p["startMs"] - w["startMs"]) < 500 for p in deduped[-8:]):
+                continue
+            deduped.append(w)
+        segs = []
+        for w in deduped:
+            if segs and segs[-1]["speaker"] == w["speaker"] and 0 <= w["startMs"] - segs[-1]["endMs"] < 1500:
+                segs[-1]["endMs"] = max(segs[-1]["endMs"], w["endMs"])
+                segs[-1]["text"] += " " + w["word"]
+            else:
+                segs.append({"startMs": w["startMs"], "endMs": w["endMs"], "speaker": w["speaker"], "text": w["word"]})
+        texts = [s["text"] for s in segs]
+        dup_ratio = 1 - len(deduped) / len(words) if words else 0.0
+        return {"text": " ".join(texts), "segments": segs, "chunks": n_chunks, "duplicateWordRatio": dup_ratio}
 
     return run
 
