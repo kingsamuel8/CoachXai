@@ -221,20 +221,25 @@ def google_chirp3_engine(diarize: bool, use_phrases: bool):
             if use_phrases:
                 config["adaptation"] = {"phraseSets": [{"inlinePhraseSet": {
                     "phrases": [{"value": t, "boost": 10} for t in terms]}}]}
-            body = json.dumps({"config": config, "files": [{"uri": u} for u, _, _ in uris],
-                               "recognitionOutputConfig": {"inlineResponseConfig": {}}})
+            # inlineResponseConfig 는 요청당 파일 하나만 받는다 — 조각마다 따로 보내 동시에 기다린다.
             base = "https://us-speech.googleapis.com/v2"
-            op = _curl_json([*auth, "-H", "Content-Type: application/json", "--data-binary", body,
-                             f"{base}/projects/{project}/locations/us/recognizers/_:batchRecognize"])
+            ops = []
+            for u, _, _ in uris:
+                body = json.dumps({"config": config, "files": [{"uri": u}],
+                                   "recognitionOutputConfig": {"inlineResponseConfig": {}}})
+                ops.append(_curl_json([*auth, "-H", "Content-Type: application/json", "--data-binary", body,
+                                       f"{base}/projects/{project}/locations/us/recognizers/_:batchRecognize"]))
             for _ in range(360):  # 최대 30분
-                if op.get("done"):
+                if all(o.get("done") for o in ops):
                     break
                 time.sleep(5)
-                op = _curl_json([*auth, f"{base}/{op['name']}"])
-            if "error" in op:
-                raise RuntimeError(json.dumps(op["error"], ensure_ascii=False)[:400])
+                ops = [o if o.get("done") else _curl_json([*auth, f"{base}/{o['name']}"]) for o in ops]
             per_chunk = []
-            for u, _, off in uris:
+            for (u, _, off), op in zip(uris, ops):
+                if not op.get("done"):
+                    raise RuntimeError("timed out waiting for BatchRecognize")
+                if "error" in op:
+                    raise RuntimeError(json.dumps(op["error"], ensure_ascii=False)[:400])
                 file_res = op["response"]["results"][u]
                 if "error" in file_res:
                     raise RuntimeError(json.dumps(file_res["error"], ensure_ascii=False)[:400])
