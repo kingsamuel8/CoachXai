@@ -52,6 +52,7 @@
     "axios": "^1.13.4",
     "fabric": "^5.5.2",
     "firebase": "^12.6.0",
+    "lesson-recorder": "file:plugins/lesson-recorder",
     "lucide-react": "^0.555.0",
     "onnxruntime-web": "^1.27.0",
     "react": "^19.2.0",

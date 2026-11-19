@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      RecorderService 와 포그라운드 서비스 권한은 일부러 여기에 두지 않는다.
+      이 플러그인은 학생 앱에도 함께 동기화되는데, 마이크 포그라운드 서비스
+      선언이 학생 앱에 섞이면 스토어 심사 대상이 된다. 코치 앱의
+      AndroidManifest.xml 이 서비스를 선언하고, 선언이 없는 앱에서는
+      isAvailable() 이 false 를 돌려준다.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+</manifest>
