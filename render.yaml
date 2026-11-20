@@ -47,6 +47,9 @@ services:
         sync: false
       - key: GEMINI_MODEL
         sync: false
+      # 레슨 녹음 v2 받아쓰기(ElevenLabs Scribe). 없으면 녹음은 처리 대기열에 남는다.
+      - key: ELEVENLABS_API_KEY
+        sync: false
 
 databases:
   - name: coachxai-db

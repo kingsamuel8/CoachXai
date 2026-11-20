@@ -101,6 +101,9 @@ const FEATURE_MODEL_OVERRIDES: Record<string, string> = {
   // 코치 요약 + 학생 요약을 한 번에 뽑는 경로. 같은 대화를 두 각도로
   // 나눠 읽어야 하고 레슨당 1회뿐이라 요약 3경로와 같은 pro 티어.
   lesson_dual_summary: 'gemini-3.1-pro-preview',
+  // 녹음 v2 — 레슨 전체 받아쓰기로 구조화 요약(코치 요약·숙제·다음 레슨·학생 요약)을
+  // 한 번에 만든다. 레슨당 1회, 결과물이 곧 제품이라 pro 티어.
+  lesson_recording_summary: 'gemini-3.1-pro-preview',
 
   // ~10초 구간 받아쓰기 — 레슨당 수백 회 호출되는 실시간 필기 경로.
   // 품질은 최신 GA flash 로 올리되, 지연·rate limit 때문에 pro 는 쓰지

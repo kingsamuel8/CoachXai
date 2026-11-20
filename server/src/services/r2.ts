@@ -107,3 +107,13 @@ export async function deletePrefix(prefix: string): Promise<number> {
   } while (token);
   return removed;
 }
+
+/** Download an object to a local file (used to join recorder segments). */
+export async function downloadToFile(key: string, path: string): Promise<number> {
+  const { createWriteStream } = await import('fs');
+  const { pipeline } = await import('stream/promises');
+  const res = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+  if (!res.Body) throw new Error(`R2 object has no body: ${key}`);
+  await pipeline(res.Body as NodeJS.ReadableStream, createWriteStream(path));
+  return Number(res.ContentLength ?? 0);
+}

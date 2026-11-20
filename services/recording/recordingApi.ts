@@ -24,6 +24,23 @@ export interface Recording {
   kept: boolean;
   audioDeleted: boolean;
   error: string | null;
+  /** 구조화 요약(마크다운). 처리 전이거나 말소리가 없으면 null. */
+  summary: string | null;
+  summaryModel: string | null;
+  processedAt: number | null;
+  attempts: number;
+}
+
+export interface TranscriptSegment {
+  idx: number;
+  startMs: number;
+  endMs: number;
+  speaker: string;
+  /** 받아쓰기 엔진 원문 — 바뀌지 않는다. */
+  rawText: string;
+  /** 표시용(코치 수정 반영). */
+  text: string;
+  editedByCoach: boolean;
 }
 
 export interface RecordingGap {
@@ -54,6 +71,13 @@ export const createRecording = (input: {
 
 export const getRecording = (id: string) =>
   apiRequest<{ recording: Recording; gaps: RecordingGap[] }>('GET', `/api/recordings/${id}`);
+
+export const getTranscript = (id: string) =>
+  apiRequest<{ segments: TranscriptSegment[] }>('GET', `/api/recordings/${id}/transcript`);
+
+/** 실패한 처리(받아쓰기·요약)를 다시 대기열에 올린다. 원본이 남아 있을 때만. */
+export const retryRecording = (id: string) =>
+  apiRequest<{ recording: Recording }>('POST', `/api/recordings/${id}/retry`);
 
 export const getStorageUsage = () => apiRequest<StorageUsage>('GET', '/api/recordings/storage');
 

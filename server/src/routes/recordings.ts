@@ -13,6 +13,8 @@
  *   GET    /api/recordings/:id                상태 조회 (코치)
  *   POST   /api/recordings/:id/keep           원본 보관 (코치)
  *   DELETE /api/recordings/:id/keep           보관 해제 (코치)
+ *   GET    /api/recordings/:id/transcript     받아쓰기 구간 (코치)
+ *   POST   /api/recordings/:id/retry          실패한 처리 다시 시도 (코치)
  */
 import express, { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
@@ -130,6 +132,10 @@ interface RecordingRow {
   audio_deleted_at: string | null;
   stt_engine: string | null;
   error: string | null;
+  summary_md: string | null;
+  summary_model: string | null;
+  processed_at: string | null;
+  attempts: number;
 }
 
 const num = (v: string | number | null | undefined): number | null =>
@@ -194,6 +200,10 @@ function present(row: RecordingRow, uploadedSeqs?: number[]) {
     kept: row.kept_at !== null,
     audioDeleted: row.audio_deleted_at !== null,
     error: row.error,
+    summary: row.summary_md ?? null,
+    summaryModel: row.summary_model ?? null,
+    processedAt: num(row.processed_at),
+    attempts: row.attempts ?? 0,
   };
 }
 
@@ -457,6 +467,63 @@ router.get('/:id', coachOnly, async (req: Request, res: Response) => {
   } catch (err) {
     console.error('[recordings] get failed', err);
     res.status(500).json({ error: '녹음을 불러오지 못했어요' });
+  }
+});
+
+// ─── 받아쓰기 ───────────────────────────────────────────────────────────────
+
+router.get('/:id/transcript', coachOnly, async (req: Request, res: Response) => {
+  try {
+    const row = await loadOwned(req.params.id, req.recordingAuth!.coachId);
+    if (!row) {
+      res.status(404).json({ error: '녹음을 찾을 수 없어요' });
+      return;
+    }
+    const r = await pool.query(
+      `SELECT idx, start_ms, end_ms, speaker, raw_text, text, edited_by_coach
+         FROM transcript_segments WHERE recording_id = $1 ORDER BY idx`,
+      [row.id]
+    );
+    res.json({
+      segments: r.rows.map((s) => ({
+        idx: s.idx,
+        startMs: Number(s.start_ms),
+        endMs: Number(s.end_ms),
+        speaker: s.speaker,
+        rawText: s.raw_text,
+        text: s.text,
+        editedByCoach: s.edited_by_coach,
+      })),
+    });
+  } catch (err) {
+    console.error('[recordings] transcript failed', err);
+    res.status(500).json({ error: '받아쓰기를 불러오지 못했어요' });
+  }
+});
+
+// ─── 처리 다시 시도 ─────────────────────────────────────────────────────────
+
+router.post('/:id/retry', coachOnly, async (req: Request, res: Response) => {
+  try {
+    const now = Date.now();
+    const r = await pool.query<RecordingRow>(
+      `UPDATE lesson_recordings
+          SET status = 'queued', attempts = 0, next_attempt_at = NULL, error = NULL, updated_at = $3
+        WHERE id = $1 AND coach_id = $2 AND status IN ('failed', 'ready') AND audio_deleted_at IS NULL
+        RETURNING *`,
+      [req.params.id, req.recordingAuth!.coachId, now]
+    );
+    if (!r.rows[0]) {
+      const row = await loadOwned(req.params.id, req.recordingAuth!.coachId);
+      if (!row) res.status(404).json({ error: '녹음을 찾을 수 없어요' });
+      else if (row.audio_deleted_at) res.status(410).json({ error: '원본이 삭제돼 다시 처리할 수 없어요' });
+      else res.status(409).json({ error: '지금은 다시 처리할 수 없어요', status: row.status });
+      return;
+    }
+    res.json({ recording: present(r.rows[0]) });
+  } catch (err) {
+    console.error('[recordings] retry failed', err);
+    res.status(500).json({ error: '다시 시도하지 못했어요' });
   }
 });
 

@@ -25,6 +25,7 @@ import consentsRouter from './routes/consents';
 import recordingsRouter from './routes/recordings';
 import { startScheduledPushRunner } from './services/scheduledPushRunner';
 import { startRecordingRetentionRunner } from './services/recordingRetentionRunner';
+import { startRecordingProcessor } from './services/recording/processor';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '4000', 10);
@@ -108,6 +109,7 @@ initDb()
     });
     startScheduledPushRunner();
     startRecordingRetentionRunner();
+    startRecordingProcessor();
   })
   .catch((err) => {
     console.error('[swingnote-server] DB init failed:', err);
