@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ClientProfile, Lesson, CoachProfile, FirebaseConfig, HomeworkTemplate, NotificationMessage } from '../types';
 import { Button } from './Button';
-import { Users, FileText, Trash2, LogOut, RefreshCcw, ShieldAlert, CreditCard, CheckCircle, XCircle, Activity, LayoutDashboard, UserX, Database, Video, Mic, Image as ImageIcon, User, Award, Calendar, Cloud, Save, AlertTriangle, ListChecks, Plus, Send, Bell, MessageSquare, Megaphone, MapPin, Briefcase, Search, Eye, EyeOff, Building2, Sparkles } from 'lucide-react';
+import { Users, FileText, Trash2, LogOut, RefreshCcw, ShieldAlert, CreditCard, CheckCircle, XCircle, Activity, LayoutDashboard, UserX, Database, Video, Mic, Image as ImageIcon, User, Award, Calendar, Cloud, Save, ListChecks, Plus, Send, MessageSquare, Megaphone, Search, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { firebaseService } from '../services/firebase';
 import { storageService } from '../services/storage';
 import { AdminCourseManager } from './AdminCourseManager';

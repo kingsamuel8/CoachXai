@@ -89,7 +89,6 @@ export const BranchAdminDashboard: React.FC<BranchAdminDashboardProps> = ({
   const showMobileOverview = viewMode === 'auto' && isNarrow;
 
   // Branch data
-  const [branch, setBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -137,8 +136,6 @@ export const BranchAdminDashboard: React.FC<BranchAdminDashboardProps> = ({
         setFetchError(t('branch_fetch_error'));
         return;
       }
-      setBranch(found);
-
       // Hydrate opening hours editor
       const initialHours: Record<DayOfWeek, OpeningHourEntry> = DAYS.reduce(
         (acc, d) => ({
@@ -165,8 +162,6 @@ export const BranchAdminDashboard: React.FC<BranchAdminDashboardProps> = ({
 
   const persistBranchFields = async (fields: Partial<Omit<Branch, 'id'>>) => {
     await branchService.updateBranch(branchId, fields);
-    // Reflect locally
-    setBranch((prev) => (prev ? { ...prev, ...fields, updatedAt: Date.now() } : prev));
   };
 
   // ── save opening hours ───────────────────────────────────────────────────────

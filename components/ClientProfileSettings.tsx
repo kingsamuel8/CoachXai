@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ClientProfile,
-  CoachProfile,
   Lesson,
   ClubSpec,
   ClubCategory,
@@ -643,6 +642,7 @@ export const ClientProfileSettings: React.FC<ClientProfileSettingsProps> = ({ pr
                           <input
                             ref={frontPhotoInputRef}
                             type="file"
+                            aria-label="정면 전신"
                             accept="image/*"
                             className="hidden"
                             onChange={(e) => handleBodyPhotoChange('front', e.target.files)}
@@ -689,6 +689,7 @@ export const ClientProfileSettings: React.FC<ClientProfileSettingsProps> = ({ pr
                           <input
                             ref={sidePhotoInputRef}
                             type="file"
+                            aria-label="측면 전신"
                             accept="image/*"
                             className="hidden"
                             onChange={(e) => handleBodyPhotoChange('side', e.target.files)}

@@ -2,25 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BayReservation, BayReservationStatus, ClientProfile } from '../types';
 import { bayReservationService } from '../services/bayReservationService';
 import { Calendar, Clock, Target, MapPin, AlertCircle, Loader, CheckCircle, XCircle, Clock3 } from 'lucide-react';
-import { Button } from './Button';
 import { BackButton } from './ui/BackButton';
 
 interface MyBayReservationsProps {
   clientProfile: ClientProfile;
   onBack: () => void;
   overrideClientId?: string;
-}
-
-function formatDateTime(isoStr: string): string {
-  const d = new Date(isoStr);
-  return d.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 function formatDateOnly(isoStr: string): string {

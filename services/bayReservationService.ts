@@ -27,12 +27,6 @@ function toYMD(date: string | Date): string {
   return `${y}${m}${day}`;
 }
 
-/** Return "YYYY-MM-DD" from a date string "YYYYMMDD" or ISO */
-function toDateStr(ymd: string): string {
-  if (ymd.includes('-')) return ymd.slice(0, 10);
-  return `${ymd.slice(0, 4)}-${ymd.slice(4, 6)}-${ymd.slice(6, 8)}`;
-}
-
 const DAY_OF_WEEK_KEYS: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 function getDayKey(date: string): DayOfWeek {

@@ -3,15 +3,13 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLanguage } from './LanguageContext';
 import { Lesson, MediaItem, SwingSequenceItem, HoleRecord, ScorecardDetail, VideoEditMetadata, CompareVideoMetadata, MotionCaptureMeasurement } from '../types';
 import { Button } from './Button';
-import { ArrowLeft, Calendar, User, Sparkles, Mic, Plus, Video, Image as ImageIcon, X, Camera, Square, Trash2, Mic2, PlayCircle, Lock, PenTool, Save, Target, AlertTriangle, MessageCircle, CheckCircle, AlertCircle, Clock, Volume2, StopCircle, Copy, Check, Film, ChevronRight, FileText, MonitorPlay, Scissors, GripHorizontal, RefreshCw, Maximize2, Zap, Play, Pause, ListChecks, Trophy, Wand2, MapPin, Edit2, TrendingUp, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Sparkles, Mic, Plus, Video, Image as ImageIcon, X, Camera, Square, Trash2, PenTool, Save, MessageCircle, CheckCircle, AlertCircle, Clock, Volume2, StopCircle, Copy, Check, Film, FileText, MonitorPlay, Scissors, RefreshCw, ListChecks, Trophy, Wand2, MapPin, Edit2, TrendingUp, Download, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { analyzeSwingVideo, analyzeMotionCapture } from '../services/geminiService';
-import { SwingGuideOverlay } from './SwingGuideOverlay';
 import { GolfDataVisualizer } from './GolfDataVisualizer';
 import { VideoEditor } from './VideoEditor';
 import { firebaseService } from '../services/firebase';
 import { apiService, resolveMediaUrl } from '../services/apiService';
-import { storageService } from '../services/storage';
 import { videoEditingService } from '../services/videoEditingService';
 import { videoStore, IDB_PREFIX, resolveSync } from '../services/videoStore';
 import {
@@ -106,7 +104,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   const [addMode, setAddMode] = useState<'SELECT' | 'CAMERA' | 'VOICE' | 'SCREEN' | 'PREVIEW'>('SELECT');
   const [capturedMedia, setCapturedMedia] = useState<{url: string, type: 'video'|'image'|'audio'} | null>(null);
   const [mediaError, setMediaError] = useState(false);
-  const [recordingAngle, setRecordingAngle] = useState<'FRONT' | 'SIDE'>('FRONT');
 
   const [isCommentaryMode, setIsCommentaryMode] = useState(false);
   const [isSequenceMode, setIsSequenceMode] = useState(false);
@@ -128,8 +125,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   const [editingHoles, setEditingHoles] = useState<HoleRecord[]>([]);
 
   // Video Player State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   // Video Editor State
@@ -162,7 +157,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   const [resolvedEditedUrl, setResolvedEditedUrl] = useState<string | null>(null);
   const [resolvedCompareUrl, setResolvedCompareUrl] = useState<string | null>(null);
   const [resolvedAdditionalUrls, setResolvedAdditionalUrls] = useState<Record<string, string>>({});
-
 
   const mediaElementRef = useRef<HTMLMediaElement>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null); 
@@ -242,8 +236,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
   }, []);
 
   const resetPlayerState = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
       setDuration(0);
       setMediaError(false);
   };
@@ -536,7 +528,6 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
     onUpdate({ ...lesson, additionalMedia: updatedMedia });
   };
 
-
   const handleDeleteMedia = (mediaId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -566,43 +557,9 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
       setTimeout(() => setTempNotification(null), 2000);
   };
 
-  // --- Video Controls ---
-  const togglePlay = () => {
-      if (mediaElementRef.current) {
-          if (mediaElementRef.current.paused) {
-              mediaElementRef.current.play().catch((err: unknown) => {
-                  // AbortError fires when play() is interrupted by buffering — not fatal
-                  const name = err instanceof Error ? err.name : '';
-                  if (name !== 'AbortError' && name !== 'NotAllowedError') {
-                      console.error('[LessonDetail] play() rejected:', err);
-                      setMediaError(true);
-                  } else {
-                      console.warn('[LessonDetail] play() rejected (transient):', name);
-                  }
-              });
-          } else {
-              mediaElementRef.current.pause();
-          }
-      }
-  };
-
-  const handleTimeUpdate = () => {
-      if (mediaElementRef.current) {
-          setCurrentTime(mediaElementRef.current.currentTime);
-      }
-  };
-
   const handleLoadedMetadata = () => {
       if (mediaElementRef.current) {
           setDuration(mediaElementRef.current.duration);
-      }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const time = parseFloat(e.target.value);
-      setCurrentTime(time);
-      if (mediaElementRef.current) {
-          mediaElementRef.current.currentTime = time;
       }
   };
 
@@ -1329,13 +1286,10 @@ export const LessonDetail: React.FC<LessonDetailProps> = ({ lesson, allLessons =
                                 playsInline
                                 controls
                                 preload="metadata"
-                                onTimeUpdate={handleTimeUpdate}
                                 onLoadedMetadata={handleLoadedMetadata}
-                                onEnded={() => setIsPlaying(false)}
                                 onError={() => setMediaError(true)}
                                 key={safeActiveMediaUrl}
-                                onPlay={() => { setIsPlaying(true); setMediaError(false); }}
-                                onPause={() => setIsPlaying(false)}
+                                onPlay={() => setMediaError(false)}
                             />
                             ) : (
                                 <div className="w-full h-full flex flex-col items-center justify-center text-ink-muted">

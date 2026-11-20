@@ -1,6 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { ClientProfileSettings } from '../components/ClientProfileSettings';
 import { LanguageProvider } from '../components/LanguageContext';
 import { ClientProfile, Lesson } from '../types';

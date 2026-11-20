@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   Download,
   AlertTriangle,
-  CheckCircle2,
   RefreshCw,
   Activity,
   TrendingUp,

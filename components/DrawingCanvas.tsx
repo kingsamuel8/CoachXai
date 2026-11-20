@@ -35,7 +35,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [selectedColor, setSelectedColor] = useState('#FF0000');
   const [lineWidth, setLineWidth] = useState(4);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -234,11 +233,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     setIsPlaying(!isPlaying);
   };
 
-  const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
-  };
-
   const handleSave = () => {
     saveCurrentFrame();
     onSave();
@@ -255,7 +249,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
               src={videoUrl}
               className="w-full"
               playsInline
-              onTimeUpdate={handleTimeUpdate}
             />
           </div>
           <Button onClick={handlePlayPause} className="w-full">

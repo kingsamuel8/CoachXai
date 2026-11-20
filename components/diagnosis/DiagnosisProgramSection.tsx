@@ -6,7 +6,7 @@ import { Button } from '../Button';
 import { calculateCourseMentalScore, calculateShortGameDiagnosisScore, calculateSkillScore, clampDiagnosisScore, getAgeFromBirthDate } from '../../utils/diagnosis';
 import { analyzeTrackmanData, calculateEquipmentScore, ClubEquipmentAnalysis, MetricAnalysisResult } from '../../utils/equipmentAnalysis';
 import { useLanguage } from '../LanguageContext';
-import { ChevronDown, ChevronUp, Plus, Trash2, Monitor, Camera, Loader2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Monitor, Camera, Loader2, Upload } from 'lucide-react';
 import { PostureAnalysisDashboard } from '../posture/PostureAnalysisDashboard';
 import { ScreenCaptureDialog } from './ScreenCaptureDialog';
 import { ShortGameDiagnosisSection } from './ShortGameDiagnosisSection';
@@ -744,7 +744,7 @@ export const DiagnosisProgramSection: React.FC<DiagnosisProgramSectionProps> = (
                     <Button
                       type="button"
                       onClick={() => equipmentPhotoInputRef.current?.click()}
-                      variant="outline"
+                      variant="secondary"
                       className="w-full md:w-auto"
                       disabled={isAnalyzingEquipmentPhoto}
                       data-testid="diagnosis-equipment-photo-btn"
@@ -929,7 +929,7 @@ export const DiagnosisProgramSection: React.FC<DiagnosisProgramSectionProps> = (
 
               <Button
                 onClick={handleStartPostureAnalysis}
-                variant="outline"
+                variant="secondary"
                 className="w-full mb-3"
                 data-testid="start-posture-analysis-btn"
               >
@@ -1080,7 +1080,7 @@ export const DiagnosisProgramSection: React.FC<DiagnosisProgramSectionProps> = (
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={() => trackmanFileInputRef.current?.click()}
                       disabled={!selectedClub}
                       className="flex items-center gap-2 whitespace-nowrap"

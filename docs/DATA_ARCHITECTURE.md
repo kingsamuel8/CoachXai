@@ -99,7 +99,7 @@ Firestore가 죽어 있으므로 아래는 모두 **기기별 localStorage에만
 3. **시간 타입 혼재**: `created_at BIGINT`(epoch ms), `date VARCHAR(50)`, `expiry_date VARCHAR(50)`, `subscription_end_date VARCHAR(50)`. 글로벌 타임존 대응(PRD 요구)이 불가능한 저장 형식.
 4. **JSONB 블롭 과다**: `ai_analysis`, `golf_data`, `swing_sequence`, `scorecard_detail`, `member_body_analysis` 등 분석·통계·학습에 가장 중요한 데이터가 스키마/버전 없는 블롭. 쿼리 불가, 스키마 진화 추적 불가.
 5. **보안 부채**: `BranchAdminAccount.password` 평문(localStorage/Firestore), 브랜치 관리자 로그인 전부 클라이언트 사이드, 하드코딩된 레거시 관리자 폴백 크리덴셜(`authService.ts`, `server/routes/auth.ts`), 토큰 저장소 3원화.
-6. **죽은 코드/경로**: `tossPayments.ts` 라우트 미마운트, `training_programs` 테이블 도달 불가, 루트에 `dist.zip` 커밋됨.
+6. **죽은 코드/경로**: `training_programs` 테이블 도달 불가. (미마운트 `tossPayments.ts` 라우트와 루트 `dist.zip`은 정리됨.)
 7. **localStorage 용량 압박을 이미 코드로 방어 중**: AI 로그 1,000건 캡, 채팅 200메시지 캡 + 쿼터 에러 시 반절 재시도, 오염된 JSON 방어 유틸(`safeStorage.ts`)과 회귀 테스트까지 존재 — 로컬 저장의 한계를 코드가 증언하고 있다.
 
 ### 2.4.1 회원 행 중복 — 증상과 정리 경로 (운영 노트)

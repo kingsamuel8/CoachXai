@@ -41,7 +41,6 @@ interface CoachActivityData {
 const NOW = Date.now();
 const MS_7D = 7 * 24 * 60 * 60 * 1000;
 const MS_30D = 30 * 24 * 60 * 60 * 1000;
-const MS_60D = 60 * 24 * 60 * 60 * 1000;
 
 function computeActivityData(
   coach: CoachProfile,

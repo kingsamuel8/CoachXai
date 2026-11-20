@@ -1,6 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { CompareVideoMetadata, DrawingFrame, VideoMetadata } from '../types';
+import { DrawingFrame, VideoMetadata } from '../types';
 import { createLogger } from '../utils/logger';
 
 const log = createLogger('videoEditing');

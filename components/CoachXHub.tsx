@@ -211,17 +211,6 @@ const MemberReportCard: React.FC<{
   const [expanded, setExpanded] = useState(false);
   const [activeSection, setActiveSection] = useState<'report' | 'curriculum' | 'drills' | 'history'>('report');
 
-  const levelColors = {
-    high: 'bg-red-500/[0.10] text-red-200 border-red-500/30',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200',
-    low: 'bg-white/[0.06] text-ink-muted border-line-subtle',
-  };
-  const levelLabels = {
-    high: t('coachx_attention_high'),
-    medium: t('coachx_attention_medium'),
-    low: t('coachx_attention_low'),
-  };
-
   const trendIcon =
     report.trendIndicator === 'improving' ? <TrendingUp className="w-3.5 h-3.5 text-emerald-300" /> :
     report.trendIndicator === 'plateau'   ? <Minus className="w-3.5 h-3.5 text-amber-500" /> :

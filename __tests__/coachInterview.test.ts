@@ -7,13 +7,19 @@
  *   delegates to the document→prompt pipeline (verified by counting calls).
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   generateInterviewQuestion,
   finalizeInterviewToSystemPrompt,
 } from '../services/geminiService';
 
 describe('generateInterviewQuestion', () => {
+  // generate_interview_question responses are cached in localStorage; reset
+  // so each test sees its own mocked response.
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });

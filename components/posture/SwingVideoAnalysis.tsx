@@ -580,10 +580,6 @@ const EventSnapshot: React.FC<EventSnapshotProps> = ({
     const v = event.metrics[key];
     return typeof v === 'number' && Number.isFinite(v) ? `${v.toFixed(1)}°` : '—';
   };
-  const metricMm = (key: string) => {
-    const v = event.metrics[key];
-    return typeof v === 'number' && Number.isFinite(v) ? `${v.toFixed(0)}mm` : '—';
-  };
   const metricSignedDeg = (key: string) => {
     const v = event.metrics[key];
     if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
@@ -756,17 +752,6 @@ const EventSnapshot: React.FC<EventSnapshotProps> = ({
     </div>
   );
 };
-
-function impactTone(
-  value: number | undefined,
-  okMax: number,
-  warnMax: number,
-): 'ok' | 'warn' | 'bad' | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  if (value <= okMax) return 'ok';
-  if (value <= warnMax) return 'warn';
-  return 'bad';
-}
 
 /**
  * Build an overlay line showing the swing plane trace: dashed segment from the
@@ -1352,12 +1337,7 @@ const KineticChart: React.FC<{ ks: KineticSequence }> = ({ ks }) => {
   // Peak markers relative to the chart window (frameIndices[0] = 0).
   const peakMarker = (peak: KineticSegmentPeak | undefined, color: string) => {
     if (!peak) return null;
-    const idx = tl.frameIndices.findIndex((fi) => {
-      // peakT is in seconds; the timeline stores frameIndices. Approximate by
-      // matching the closest frame — good enough for a marker.
-      return true;
-    });
-    // Simpler: find slot with the max value in the drawn series matching this segment.
+    // Find slot with the max value in the drawn series matching this segment.
     const series =
       peak.segment === 'pelvis'
         ? tl.pelvis

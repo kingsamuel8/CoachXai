@@ -1,5 +1,4 @@
 
-import { CoachProfile, ClientProfile } from '../types';
 
 export const paymentService = {
   /**

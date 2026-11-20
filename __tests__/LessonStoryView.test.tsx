@@ -10,7 +10,6 @@
  *  - 접근성 — 캡션이 alt 가 되고, 없으면 위치 폴백이 붙는가
  *  - 초안 표시가 코치에게만 뜨는가
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { LessonStoryView } from '../components/LessonStoryView';

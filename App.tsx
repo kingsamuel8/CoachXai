@@ -37,7 +37,6 @@ import { ReservationManager } from './components/ReservationManager';
 import { CoachBayReservation } from './components/CoachBayReservation';
 import { MyBayReservations } from './components/MyBayReservations';
 import { CoachReservationNotificationModal } from './components/CoachReservationNotificationModal';
-import { CoachLessonReservationModal } from './components/CoachLessonReservationModal';
 import { LessonPackageManager } from './components/LessonPackageManager';
 import { TrainingProgramGenerator } from './components/TrainingProgramGenerator';
 import { LessonStartPromptModal } from './components/LessonStartPromptModal';
@@ -49,10 +48,9 @@ import { dedupeClients } from './utils/clientRoster';
 import { lessonBelongsToCoach } from './utils/lessonOwnership';
 import { storageService } from './services/storage';
 import { authService } from './services/authService';
-import { firebaseService } from './services/firebase';
 import { apiService, SESSION_EXPIRED_EVENT } from './services/apiService';
 import { homeworkService } from './services/homeworkService';
-import { videoStore, IDB_PREFIX } from './services/videoStore';
+import { videoStore } from './services/videoStore';
 import { initializePush, unregisterCurrentDevice } from './services/pushService';
 import {
   getUnreadReservationNotificationsForCoach,
@@ -66,7 +64,6 @@ import {
   pruneStaleDismissal,
   LessonSuggestion,
 } from './services/lessonStartSuggestionService';
-import { Button } from './components/Button';
 import { CoachXHub } from './components/CoachXHub';
 import { CoachAIHome, type TodayLessonSummary } from './components/CoachAIHome';
 import { LessonReviewScreen } from './components/LessonReviewScreen';
@@ -75,40 +72,19 @@ import { DIAGNOSIS_FACTORS, DIAGNOSIS_PROCESS } from './constants/diagnosis';
 import { diagnosisService } from './services/diagnosisService';
 import { DiagnosisInput, DiagnosisProgram, DiagnosisSavedSession, GolferProfile } from './types/diagnosis';
 import {
-  Plus,
-  Search,
   Filter,
-  LogOut,
   User,
-  ListChecks,
   X,
-  Mail,
-  Phone,
-  Calendar,
-  CreditCard,
-  Play,
-  Globe,
   Eye,
   EyeOff,
   BarChart3,
-  Target,
   BookOpen,
-  Users,
-  CheckCircle,
-  Clock,
-  ChevronRight,
-  TrendingUp,
-  Sparkles,
-  Dumbbell,
-  Home,
   Menu,
 } from 'lucide-react';
 import { CoachHamburgerMenu, CoachHamburgerAction } from './components/CoachHamburgerMenu';
 import { LanguageProvider, useLanguage } from './components/LanguageContext';
 import {
   APP_VARIANT,
-  IS_COACH_APP,
-  IS_STUDENT_APP,
   isRoleAllowedInThisApp,
 } from './utils/appVariant';
 import { FEATURES } from './constants/featureFlags';
@@ -301,9 +277,6 @@ const AppContent: React.FC = () => {
   const [liveLessonReservationsLoading, setLiveLessonReservationsLoading] = useState(false);
   const [isEditingLesson, setIsEditingLesson] = useState(false); // Track editing mode
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | undefined>(undefined); // Pre-fill date from calendar click
-  const [coachLessonModalDate, setCoachLessonModalDate] = useState<string | undefined>(undefined);
-  const [coachLessonModalHour, setCoachLessonModalHour] = useState<number>(9);
-  const [showCoachLessonModal, setShowCoachLessonModal] = useState(false);
 
   // Lesson Package State
   const [lessonPackages, setLessonPackages] = useState<LessonPackage[]>([]);
@@ -331,7 +304,6 @@ const AppContent: React.FC = () => {
   // Training Program State
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingProgram[]>([]);
   const [selectedClientForTraining, setSelectedClientForTraining] = useState<ClientProfile | null>(null);
-  const [trainingProgramReturnView, setTrainingProgramReturnView] = useState<ViewState>('CLIENTS');
   const [selectedDiagnosisSession, setSelectedDiagnosisSession] = useState<DiagnosisSavedSession | null>(null);
   const selectedDiagnosisClient = useMemo(
     () => clients.find((client) => client.name === selectedClientFilter) ?? null,
@@ -426,6 +398,15 @@ const AppContent: React.FC = () => {
     };
   }, [userRole]);
 
+  /** 골프 시작일 → 만 경력 연수. 날짜가 없거나 깨졌으면 null. */
+  const yearsSince = (isoDate?: string): number | null => {
+    if (!isoDate) return null;
+    const start = new Date(isoDate);
+    if (Number.isNaN(start.getTime())) return null;
+    const years = (Date.now() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    return years >= 0 ? Math.floor(years) : null;
+  };
+
   const initialDiagnosisGolferProfile = useMemo<Partial<GolferProfile> | undefined>(() => {
     if (!selectedDiagnosisClient) return undefined;
     return {
@@ -433,7 +414,7 @@ const AppContent: React.FC = () => {
       contact: selectedDiagnosisClient.phone,
       handicap: selectedDiagnosisClient.handicap ?? null,
       bestScore: selectedDiagnosisClient.bestScore ?? null,
-      golfStartDate: selectedDiagnosisClient.golfStartDate ?? '',
+      yearsOfExperience: yearsSince(selectedDiagnosisClient.golfStartDate),
     };
   }, [selectedDiagnosisClient]);
 
@@ -1115,15 +1096,6 @@ const AppContent: React.FC = () => {
     localStorage.setItem('coach_showMedia', JSON.stringify(newValue));
   };
 
-  // Helper to get local date
-  const getLocalISODate = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   // --- CRUD Handlers ---
 
   const handleSaveLesson = async (
@@ -1401,7 +1373,7 @@ const AppContent: React.FC = () => {
     const isFb = apiService.isAvailable();
     try {
       if (isFb) {
-        await apiService.deleteLesson(lessonId, lessonToDelete);
+        await apiService.deleteLesson(lessonId);
       } else {
         storageService.saveLessons(updatedLessons);
       }
@@ -1908,32 +1880,9 @@ const AppContent: React.FC = () => {
     setCoachView('DIAGNOSIS_RESULT');
   };
 
-  const handleGenerateProgramForClient = (client: ClientProfile) => {
-    setSelectedClientForTraining(client);
-    setTrainingProgramReturnView(coachView === 'DIAGNOSIS_PROGRAM' ? 'DIAGNOSIS_PROGRAM' : 'CLIENTS');
-    setCoachView('TRAINING_PROGRAM');
-  };
-
   const handleResetSystem = () => {
     storageService.clearAllData();
     window.location.reload();
-  };
-
-  const handleSearchCoach = async (name: string, phone: string) => {
-    if (apiService.isAvailable()) {
-      return await apiService.findCoach(name, phone);
-    } else {
-      // Mock local check
-      const localCoach = authService.getCoachProfile();
-      if (
-        localCoach &&
-        localCoach.name === name &&
-        localCoach.phone === phone
-      ) {
-        return localCoach;
-      }
-      return null;
-    }
   };
 
   const handleToggleSubscription = async (
@@ -1943,7 +1892,7 @@ const AppContent: React.FC = () => {
     const updatedUser = {
       ...targetUser,
       isSubscribed: newStatus,
-      subscriptionPlan: newStatus ? 'PRO' : 'FREE',
+      subscriptionPlan: (newStatus ? 'PRO' : 'FREE') as 'PRO' | 'FREE',
       subscriptionEndDate: newStatus ? targetUser.subscriptionEndDate : undefined,
     };
     await updateUserState(updatedUser);
@@ -1973,7 +1922,7 @@ const AppContent: React.FC = () => {
     const updatedUser = {
       ...targetUser,
       isSubscribed: true,
-      subscriptionPlan: 'PRO',
+      subscriptionPlan: 'PRO' as const,
       subscriptionEndDate: endDate,
     };
     await updateUserState(updatedUser);
@@ -2075,46 +2024,11 @@ const AppContent: React.FC = () => {
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [lessons, userRole, currentUser, clients]);
 
-  /** Dashboard-specific computed values */
-  const dashboardData = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const coachId = currentUser && 'id' in currentUser ? (currentUser as CoachProfile).id : '';
-
-    const todayLessons = allCoachLessons.filter(l => l.date === today);
-    const recentLessons = allCoachLessons.slice(0, 5);
-    const coachClients = clients.filter(c => c.coachId === coachId);
-    const coachPackages = lessonPackages.filter(p => p.coachId === coachId);
-
-    /** Packages where the number of recorded sessions is below totalSessions */
-    const packagesWithProgress = coachPackages.map(pkg => {
-      const recorded = allCoachLessons.filter(l => l.lessonPackageId === pkg.id).length;
-      return { pkg, recorded, remaining: pkg.totalSessions - recorded };
-    });
-    const incompletePackages = packagesWithProgress.filter(p => p.remaining > 0);
-
-    return {
-      todayLessons,
-      recentLessons,
-      coachClients,
-      coachPackages,
-      packagesWithProgress,
-      incompletePackages,
-    };
-  }, [allCoachLessons, clients, lessonPackages, currentUser]);
-
   /** CoachX member growth reports – derived from lesson data for urgency badge and client list badges */
   const coachXMemberReports = useMemo(
     () => buildMemberGrowthReports(allCoachLessons, clients),
     [allCoachLessons, clients]
   );
-
-  /**
-   * Count of members whose trendIndicator is 'inactive' or 'plateau' – these are
-   * the members that need coaching attention, used for the urgency badge on the CoachX entry.
-   */
-  const coachXUrgentCount = coachXMemberReports.filter(
-    r => r.trendIndicator === 'inactive' || r.trendIndicator === 'plateau'
-  ).length;
   const lessonUploadStudents = useMemo<Student[]>(() => {
     const currentCoachId =
       coachProfile?.id ??
@@ -2136,7 +2050,6 @@ const AppContent: React.FC = () => {
         };
       });
   }, [clients, coachProfile?.id, currentUser, userRole]);
-  const latestLesson = dashboardData?.recentLessons?.[0];
 
   // 부팅 게이트에서는 브랜드 마크를 쓰지 않습니다. 네이티브 스플래시(교차 마크)와
   // 로그인 화면 헤더 로고 사이에 마크가 한 번 더 끼어들면 X 로고가 연달아 두 번
@@ -2280,7 +2193,6 @@ const AppContent: React.FC = () => {
           </div>
         </header>
       )}
-
 
       {/* No tab bar below any more — the gutter only needs to clear the
           device's home indicator. (Not `safe-bottom` + a pb-* class: the
@@ -2749,7 +2661,7 @@ const AppContent: React.FC = () => {
             coachId={(currentUser as CoachProfile).id}
             programs={trainingPrograms}
             onBack={() => {
-              setCoachView(trainingProgramReturnView);
+              setCoachView('CLIENTS');
               setSelectedClientForTraining(null);
             }}
             onSaveProgram={handleSaveTrainingProgram}
@@ -2919,19 +2831,6 @@ const AppContent: React.FC = () => {
           }}
           onGoToReservations={() => {
             setCoachView('RESERVATIONS');
-          }}
-        />
-      )}
-
-      {/* Coach-created member lesson reservation modal */}
-      {showCoachLessonModal && coachLessonModalDate !== undefined && currentUser && 'id' in currentUser && (
-        <CoachLessonReservationModal
-          coachProfile={currentUser as CoachProfile}
-          initialDate={coachLessonModalDate}
-          initialHour={coachLessonModalHour}
-          onClose={() => setShowCoachLessonModal(false)}
-          onSaved={() => {
-            setShowCoachLessonModal(false);
           }}
         />
       )}

@@ -10,7 +10,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 
 /** 훅이 확정 문장을 흘려보내는 통로 — 테스트가 직접 발화를 만든다. */
 let emitFinal: ((text: string) => void) | null = null;

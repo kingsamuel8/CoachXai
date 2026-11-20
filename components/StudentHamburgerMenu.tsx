@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {
-  X, User, ClipboardList, Target, Crown, Briefcase,
-  Globe, Sparkles, Video, LogOut, ChevronRight, ScanLine, ShieldCheck,
+  X, User, ClipboardList, Target, Crown, 
+  Globe, Sparkles, Video, LogOut, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 import { ClientProfile } from '../types';
 import { useLanguage } from './LanguageContext';

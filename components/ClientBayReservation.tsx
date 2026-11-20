@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Branch, Bay, ClientProfile } from '../types';
+import { Branch, ClientProfile } from '../types';
 import {
   bayReservationService,
   TimeSlot,

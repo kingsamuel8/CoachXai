@@ -18,7 +18,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import React from 'react';
 import { LiveLessonCompanion } from '../components/LiveLessonCompanion';
 
 // The permission modal nested in the companion reads the language context.

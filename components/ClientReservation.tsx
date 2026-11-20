@@ -13,12 +13,9 @@ interface ClientReservationProps {
 }
 
 export const ClientReservation: React.FC<ClientReservationProps> = ({ clientProfile, onBack }) => {
-  const [availableSlots, setAvailableSlots] = useState<LessonReservation[]>([]);
   const [myReservations, setMyReservations] = useState<LessonReservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'AVAILABLE' | 'MY_RESERVATIONS'>('AVAILABLE');
-  const [selectedSlot, setSelectedSlot] = useState<LessonReservation | null>(null);
-  const [notes, setNotes] = useState('');
   const [filterStatus, setFilterStatus] = useState<ReservationStatus | 'ALL'>('ALL');
   
   // Form state for direct time input
@@ -39,23 +36,6 @@ export const ClientReservation: React.FC<ClientReservationProps> = ({ clientProf
   const coachId = selectedCoachId || '';
   const selectedCoach = coaches.find((c) => c.id === coachId);
   const selectedCoachName = selectedCoach?.name || clientProfile.designatedCoach || '';
-
-  const loadAvailableSlots = async () => {
-    if (!coachId) {
-      alert('담당 코치가 지정되지 않았습니다.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await reservationService.getAvailableSlots(coachId);
-      setAvailableSlots(data);
-    } catch (error) {
-      console.error('Failed to load available slots:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadMyReservations = async () => {
     setLoading(true);
@@ -88,33 +68,10 @@ export const ClientReservation: React.FC<ClientReservationProps> = ({ clientProf
   }, [clientProfile.coachId, selectedCoachId]);
 
   useEffect(() => {
-    if (view === 'AVAILABLE') {
-      loadAvailableSlots();
-    } else {
+    if (view === 'MY_RESERVATIONS') {
       loadMyReservations();
     }
   }, [view, clientProfile, coachId]);
-
-  const handleRequestReservation = async () => {
-    if (!selectedSlot) return;
-
-    try {
-      await reservationService.confirmAvailableSlotByStudent(
-        selectedSlot.id,
-        clientId,
-        clientProfile.name,
-        clientProfile.phone,
-        notes || undefined
-      );
-
-      alert('예약이 확정되었습니다.');
-      setSelectedSlot(null);
-      setNotes('');
-      loadAvailableSlots();
-    } catch (error: any) {
-      alert(error.message || '예약 확정에 실패했습니다.');
-    }
-  };
 
   const loadSlotsForDate = async (date: string) => {
     if (!date || !coachId) {
@@ -712,62 +669,6 @@ export const ClientReservation: React.FC<ClientReservationProps> = ({ clientProf
           </div>
         )}
       </div>
-
-      {/* Reservation Modal */}
-      {selectedSlot && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white/[0.04] rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">레슨 예약 확정</h2>
-            
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-2 text-ink-medium">
-                <Clock className="w-4 h-4 text-ink-muted" />
-                <span className="text-sm">
-                  {formatDateTime(selectedSlot.startTime)} - {new Date(selectedSlot.endTime).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-ink-medium">
-                <User className="w-4 h-4 text-ink-muted" />
-                <span className="text-sm">{selectedSlot.coachName} 코치</span>
-              </div>
-              {selectedSlot.lessonType && (
-                <div className="text-sm">
-                  <span className="text-ink-muted">레슨 종류:</span>{' '}
-                  <span className="font-medium">{selectedSlot.lessonType}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-ink-medium mb-2">
-                메모 (선택사항)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="코치에게 전달할 메시지를 입력하세요"
-                className="w-full px-3 py-2 border border-line-subtle rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleRequestReservation} className="flex-1">
-                예약 확정
-              </Button>
-              <button
-                onClick={() => {
-                  setSelectedSlot(null);
-                  setNotes('');
-                }}
-                className="px-4 py-2 text-ink-medium hover:bg-white/[0.06] rounded-lg transition"
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

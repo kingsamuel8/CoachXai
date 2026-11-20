@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import React from 'react';
 import App from '../App';
 import { apiService } from '../services/apiService';
 import { ClientProfile } from '../types';
@@ -83,12 +82,6 @@ vi.mock('../services/reservationService', async (importOriginal) => {
     },
   };
 });
-
-vi.mock('../services/realtime', () => ({
-  realtimeSubscribe: vi.fn().mockReturnValue(() => {}),
-  realtimeUnsubscribe: vi.fn(),
-  realtimeConnect: vi.fn(),
-}));
 
 vi.mock('../components/CalendarView', () => ({
   default: () => <div data-testid="calendar-view" />,

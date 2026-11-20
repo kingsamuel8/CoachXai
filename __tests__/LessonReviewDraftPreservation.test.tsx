@@ -68,7 +68,7 @@ beforeEach(() => {
 
 describe('LessonReviewScreen · AI 초안 보존', () => {
   it('승인 시 AI 원안을 최종본과 함께 올린다', async () => {
-    const onApprove = vi.fn(async () => undefined);
+    const onApprove = vi.fn(async (_patch: unknown) => undefined);
     renderScreen(baseLesson(), { onApprove });
 
     // 첫 방문 자동 초안이 화면에 얹힐 때까지 기다린다.
@@ -88,7 +88,7 @@ describe('LessonReviewScreen · AI 초안 보존', () => {
   });
 
   it('코치가 고친 뒤 승인해도 원안은 고치기 전 그대로다 — 이 둘의 차이가 학습쌍이다', async () => {
-    const onApprove = vi.fn(async () => undefined);
+    const onApprove = vi.fn(async (_patch: unknown) => undefined);
     renderScreen(baseLesson(), { onApprove });
 
     const feedbackBox = await screen.findByDisplayValue(AI_DRAFT.feedback!);
@@ -107,7 +107,7 @@ describe('LessonReviewScreen · AI 초안 보존', () => {
   });
 
   it('이미 초안이 저장된 레슨에는 다시 보내지 않는다 (서버 write-once와 짝을 맞춘다)', async () => {
-    const onApprove = vi.fn(async () => undefined);
+    const onApprove = vi.fn(async (_patch: unknown) => undefined);
     renderScreen(
       baseLesson({
         reviewSections: { feedback: '코치가 이미 정리한 내용' },
@@ -132,7 +132,7 @@ describe('LessonReviewScreen · AI 초안 보존', () => {
    * 코치가 고른 문장이 새 초안에 밀린다.
    */
   it('레슨 동반 요약본이 있으면 자동 초안을 돌리지 않고 그 요약을 그대로 채운다', async () => {
-    const onApprove = vi.fn(async () => undefined);
+    const onApprove = vi.fn(async (_patch: unknown) => undefined);
     renderScreen(
       baseLesson({
         recordType: 'LIVE_LESSON',

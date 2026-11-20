@@ -19,8 +19,6 @@ import {
   where,
   updateDoc,
   writeBatch,
-  startAt,
-  endAt,
 } from 'firebase/firestore';
 import {
   getStorage,

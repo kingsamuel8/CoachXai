@@ -6,7 +6,7 @@ import { PostureAnalysisResults } from './PostureAnalysisResults';
 import { SwingVideoAnalysis } from './SwingVideoAnalysis';
 import { skeletonAnalysisService } from '../../services/skeletonAnalysisService';
 import {
-  Scan, ArrowLeft, Camera, Upload, Zap, CheckCircle2,
+  Scan, ArrowLeft, Camera, Zap, CheckCircle2,
   RotateCcw, Play, ZoomIn, AlertCircle, Video,
 } from 'lucide-react';
 import { PostureAnalyzingView } from './PostureAnalyzingView';

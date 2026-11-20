@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import React from 'react';
 import CalendarView from '../components/CalendarView';
 import { reservationService } from '../services/reservationService';
 import { CoachProfile, ClientProfile, LessonReservation } from '../types';
@@ -14,12 +13,6 @@ vi.mock('../services/reservationService', () => ({
     cancelReservation: vi.fn(),
     requestReservation: vi.fn(),
   },
-}));
-
-vi.mock('../services/realtime', () => ({
-  realtimeSubscribe: vi.fn(),
-  realtimeUnsubscribe: vi.fn(),
-  realtimeConnect: vi.fn(),
 }));
 
 // Mock FullCalendar – render a lightweight stub that exposes its event-click handler

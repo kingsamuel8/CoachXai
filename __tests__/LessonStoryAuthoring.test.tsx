@@ -9,7 +9,6 @@
  *    빈 문자열을 남기면 다음 조판이 빈 캡션을 그린다
  *  - Escape 로 되돌리면 저장되지 않는다
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LessonStoryView } from '../components/LessonStoryView';

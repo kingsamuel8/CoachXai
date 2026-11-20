@@ -53,8 +53,7 @@ describe('authService — poisoned storage self-heal', () => {
 
   it('apiService.setToken refuses undefined instead of storing "undefined"', () => {
     // Simulate a malformed login response where token came back undefined.
-    // @ts-expect-error — we're deliberately passing the wrong type.
-    apiService.setToken(undefined);
+    apiService.setToken(undefined as unknown as string);
     expect(apiService.getToken()).toBeNull();
     expect(localStorage.getItem('swingnote_api_token')).toBeNull();
   });

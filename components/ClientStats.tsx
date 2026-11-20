@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ClientProfile, Lesson } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, AreaChart, Area, BarChart, Bar, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Target, Wind, Calendar, Trophy, Flag, Activity, LayoutDashboard, Crosshair, Filter, CalendarDays, RefreshCw, Percent, CircleDot, Mic, GitCompareArrows, Sparkles, AlertTriangle, Star, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Target, Wind, Calendar, Trophy, Flag, Activity, Crosshair, CalendarDays, RefreshCw, CircleDot, Mic, GitCompareArrows, Sparkles, AlertTriangle, Star, Pencil } from 'lucide-react';
 import { BackButton } from './ui/BackButton';
 import { Button } from './Button';
 import { getTourAverageDistanceM, getTourLabel, TourGender } from '../constants/tourAverages';

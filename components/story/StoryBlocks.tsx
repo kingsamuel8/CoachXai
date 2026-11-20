@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ClientFeedback, GolfData } from '../../types';
-import { StoryPolaroid, type StoryMediaMap } from './StoryMedia';
+import { StoryPolaroid } from './StoryMedia';
 import { StoryEditable } from './StoryEditable';
 
 const HAND = "'Gaegu', 'Nanum Pen Script', cursive";

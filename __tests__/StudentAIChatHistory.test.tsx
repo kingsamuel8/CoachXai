@@ -10,7 +10,6 @@
  * 7. "New conversation" clears the stored transcript.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { StudentAIChat } from '../components/StudentAIChat';

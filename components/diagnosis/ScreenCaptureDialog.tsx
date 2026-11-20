@@ -11,7 +11,6 @@ interface ScreenCaptureDialogProps {
 export const ScreenCaptureDialog: React.FC<ScreenCaptureDialogProps> = ({ onCapture, onClose }) => {
   const { t } = useLanguage();
   const [availableScreens, setAvailableScreens] = useState<MediaStream[]>([]);
-  const [selectedScreenIndex, setSelectedScreenIndex] = useState<number>(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -152,7 +151,7 @@ export const ScreenCaptureDialog: React.FC<ScreenCaptureDialogProps> = ({ onCapt
         <div className="flex items-center justify-between gap-3">
           <Button
             onClick={handleChangeScreen}
-            variant="outline"
+            variant="secondary"
             className="flex items-center gap-2"
             data-testid="change-screen-btn"
           >

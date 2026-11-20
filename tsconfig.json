@@ -17,5 +17,6 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": ["node_modules", "server", "native", "dist", "dist-coach", "dist-student"]
 }

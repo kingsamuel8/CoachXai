@@ -14,7 +14,6 @@ import {
 import type { ClientProfile, CoachProfile, Lesson, HandoverSummary } from '../types';
 import { apiService } from '../services/apiService';
 import { generateHandoverSummary } from '../services/geminiService';
-import { storageService } from '../services/storage';
 import { insightService } from '../services/insightService';
 
 /**

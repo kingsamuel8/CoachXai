@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Lesson } from '../types';
-import { Calendar, PlayCircle, ChevronRight, Image as ImageIcon, Mic, User, Send, Target, Award, AlertCircle, MessageCircle, CheckCircle, Trash2, Flag, BookOpen, Trophy, Radio } from 'lucide-react';
+import { Calendar, PlayCircle, ChevronRight, Image as ImageIcon, Mic, User, Target, Award, AlertCircle, MessageCircle, CheckCircle, Trash2, BookOpen, Trophy, Radio } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { resolveMediaUrl } from '../services/apiService';
 import { videoStore, IDB_PREFIX } from '../services/videoStore';

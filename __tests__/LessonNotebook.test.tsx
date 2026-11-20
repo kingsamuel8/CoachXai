@@ -10,7 +10,6 @@
  *  - 마운트 후 도착한 조각은 글자 단위로 드러난다(받아 적기 애니메이션).
  *  - 요약 불릿과 "정리 중…" 상태가 하단 요약 노트에 표시된다.
  */
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { LessonNotebook, type NotebookLine } from '../components/LessonNotebook';

@@ -32,7 +32,6 @@
  * has to apply the real window insets — see the capacitor config assertions.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
